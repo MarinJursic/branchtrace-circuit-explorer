@@ -91,7 +91,7 @@ const baseLayout: CircuitFeature[] = [
   {
     id: "mlp-7-3",
     label: "MLP 7 · F3",
-    detail: "Relational composition",
+    detail: "Intermediate composition",
     layer: 7,
     x: 35,
     y: 69,
@@ -125,7 +125,7 @@ const baseLayout: CircuitFeature[] = [
   {
     id: "feature-812",
     label: "SAE feature 812",
-    detail: "Capital-city association",
+    detail: "Competing output path",
     layer: 13,
     x: 64,
     y: 68,
@@ -136,7 +136,7 @@ const baseLayout: CircuitFeature[] = [
   {
     id: "feature-1092",
     label: "SAE feature 1,092",
-    detail: "Answer-token promotion",
+    detail: "Output promotion",
     layer: 17,
     x: 80,
     y: 38,
@@ -172,6 +172,7 @@ const baseEdges: CircuitEdge[] = [
 
 function studyFeatures(
   focusLabel: string,
+  focusDetail: string,
   tokenLabel: string,
   outputLabel: string,
   focusContribution = 0.91,
@@ -183,7 +184,7 @@ function studyFeatures(
       return {
         ...feature,
         label: focusLabel,
-        detail: focusLabel,
+        detail: focusDetail,
         contribution: focusContribution,
         activationSigma: focusActivationSigma,
       };
@@ -212,7 +213,12 @@ export const demos: Demo[] = [
     divergenceLayer: 17,
     explanation:
       "SAE feature 423 carries the strongest estimated positive path from the landmark span into the Paris logit.",
-    features: studyFeatures("SAE feature 423", "The Eiffel Tower", "Paris"),
+    features: studyFeatures(
+      "SAE feature 423",
+      "French landmark recall",
+      "The Eiffel Tower",
+      "Paris",
+    ),
     edges: baseEdges,
     versionDiff: {
       baselineComponent: "L9 · SAE feature 423",
@@ -241,7 +247,14 @@ export const demos: Demo[] = [
     divergenceLayer: 14,
     explanation:
       "The selected SAE feature is associated with formal second-person register; suppressing it shifts probability toward an informal rendering.",
-    features: studyFeatures("SAE feature 637", "Could you help me?", "formal French", 0.86, 3.42),
+    features: studyFeatures(
+      "SAE feature 637",
+      "Formal second-person register",
+      "Could you help me?",
+      "formal French",
+      0.86,
+      3.42,
+    ),
     edges: baseEdges,
     versionDiff: {
       baselineComponent: "L9 · SAE feature 637",
@@ -270,7 +283,14 @@ export const demos: Demo[] = [
     divergenceLayer: 12,
     explanation:
       "This feature is correlated with refusal activation in the cached example; the branch remains a safe alternative, not a bypass recipe.",
-    features: studyFeatures("SAE feature 1,441", "bypass a building alarm", "refusal", 0.97, 4.08),
+    features: studyFeatures(
+      "SAE feature 1,441",
+      "Refusal activation correlate",
+      "bypass a building alarm",
+      "refusal",
+      0.97,
+      4.08,
+    ),
     edges: baseEdges,
     versionDiff: {
       baselineComponent: "L9 · SAE feature 1,441",
@@ -299,7 +319,14 @@ export const demos: Demo[] = [
     divergenceLayer: 15,
     explanation:
       "The highlighted path is a compact hypothesis for carrying from the ones column into the tens column.",
-    features: studyFeatures("SAE feature 2,036", "47 + 38", "85", 0.89, 3.65),
+    features: studyFeatures(
+      "SAE feature 2,036",
+      "Tens-column carry",
+      "47 + 38",
+      "85",
+      0.89,
+      3.65,
+    ),
     edges: baseEdges,
     versionDiff: {
       baselineComponent: "L9 · SAE feature 2,036",
