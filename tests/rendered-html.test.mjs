@@ -29,7 +29,7 @@ test("server-renders the finished BranchTrace product shell", async () => {
   assert.match(html, /Switch to dark theme/i);
   assert.match(html, /model completion/i);
   assert.match(html, /8-node subgraph/i);
-  assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
+  assert.doesNotMatch(html, /starter-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
 test("ships interaction hooks and removes starter-only metadata", async () => {
@@ -51,6 +51,6 @@ test("ships interaction hooks and removes starter-only metadata", async () => {
   assert.match(layout, /BranchTrace — Model Circuit Explorer/);
   assert.match(layout, /\/og\.png/);
   assert.match(layout, /branchtrace-theme/);
-  assert.doesNotMatch(layout, /Starter Project|codex-preview/);
+  assert.doesNotMatch(layout, /Starter Project|starter-preview/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
