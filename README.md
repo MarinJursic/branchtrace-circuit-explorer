@@ -2,6 +2,9 @@
 
 > Git branching, but for internal neural-network computations.
 
+[![Live preview](https://img.shields.io/badge/live-preview-2ea44f?logo=github)](https://marinjursic.github.io/branchtrace-circuit-explorer/)
+[![Preview status](https://github.com/MarinJursic/branchtrace-circuit-explorer/actions/workflows/pages.yml/badge.svg)](https://github.com/MarinJursic/branchtrace-circuit-explorer/actions/workflows/pages.yml)
+
 [![Next.js](https://img.shields.io/badge/Next.js-16-111714?logo=nextdotjs)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.140-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
