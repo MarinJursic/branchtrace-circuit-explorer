@@ -25,22 +25,13 @@ No credentials, model weights, or GPU are required. The included examples are de
 
 **The idea in one frame.** Teal is the cached baseline path; amber is the counterfactual branch after an intervention. The marked junction is the first layer where the deterministic fixture reports a meaningful downstream change.
 
-<table>
-  <tr>
-    <td width="54%">
-      <img src="docs/media/branchtrace-live.png" alt="Literal BranchTrace application capture with the factual-recall study and selected SAE feature 423" />
-    </td>
-    <td width="46%">
-      <img src="docs/media/branchtrace-overview.gif" alt="Four-second BranchTrace motion overview showing a circuit split into baseline and counterfactual branches" />
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Literal application capture.</strong> Pick a study on the left, inspect estimated contribution paths in the center, and configure the selected component in the intervention lab.</td>
-    <td><strong>Four-second workflow overview.</strong> Select a component, create a branch, and compare the unchanged baseline with the counterfactual output. This is explanatory presentation media—not model evidence.</td>
-  </tr>
-</table>
+![Literal BranchTrace application capture with the factual-recall study and selected SAE feature 423](docs/media/branchtrace-live.png)
 
-The included showcase is deliberately legible without interpretability background: path width means larger fixture-estimated contribution, teal/red mean positive/negative contribution, and amber appears only after a branch reports downstream divergence. All media lives in the repository, so it renders on GitHub without an external host.
+This is a capture of the running application, not an explanatory animation. Pick a
+study on the left, inspect estimated contribution paths in the center, and configure
+the selected component in the intervention lab. Path width means larger
+fixture-estimated contribution, teal/red mean positive/negative contribution, and
+amber appears only after a branch reports downstream divergence.
 
 ## Why this exists
 
