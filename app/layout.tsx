@@ -1,48 +1,33 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import "./globals.css";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const candidateHost =
-    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
-  const safeHost = /^[a-z0-9.-]+(?::\d+)?$/i.test(candidateHost)
-    ? candidateHost
-    : "localhost:3000";
-  const forwardedProtocol = requestHeaders.get("x-forwarded-proto");
-  const protocol =
-    forwardedProtocol === "http" || forwardedProtocol === "https"
-      ? forwardedProtocol
-      : safeHost.startsWith("localhost")
-        ? "http"
-        : "https";
-  const metadataBase = new URL(`${protocol}://${safeHost}`);
-  const imageUrl = new URL("/og.png", metadataBase).toString();
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const metadataBase = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000");
+const imageUrl = new URL(`${basePath}/og.png`, metadataBase).toString();
 
-  return {
-    metadataBase,
+export const metadata: Metadata = {
+  metadataBase,
+  title: "BranchTrace — Model Circuit Explorer",
+  description:
+    "Branch neural-network computations, intervene on influential features, and compare deterministic counterfactual executions.",
+  icons: {
+    icon: `${basePath}/favicon.svg`,
+    shortcut: `${basePath}/favicon.svg`,
+  },
+  openGraph: {
     title: "BranchTrace — Model Circuit Explorer",
     description:
-      "Branch neural-network computations, intervene on influential features, and compare deterministic counterfactual executions.",
-    icons: {
-      icon: "/favicon.svg",
-      shortcut: "/favicon.svg",
-    },
-    openGraph: {
-      title: "BranchTrace — Model Circuit Explorer",
-      description:
-        "Interactive, intervention-first circuit hypotheses for public-model-style activation traces.",
-      images: [{ url: imageUrl, width: 1672, height: 941, alt: "BranchTrace model circuit explorer" }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: "BranchTrace — Model Circuit Explorer",
-      description:
-        "Branch neural-network computations and inspect the first meaningful divergence.",
-      images: [imageUrl],
-    },
-  };
-}
+      "Interactive, intervention-first circuit hypotheses for public-model-style activation traces.",
+    images: [{ url: imageUrl, width: 1672, height: 941, alt: "BranchTrace model circuit explorer" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BranchTrace — Model Circuit Explorer",
+    description:
+      "Branch neural-network computations and inspect the first meaningful divergence.",
+    images: [imageUrl],
+  },
+};
 
 export default function RootLayout({
   children,

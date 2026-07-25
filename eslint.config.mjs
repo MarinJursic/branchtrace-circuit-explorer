@@ -8,6 +8,7 @@ export default tseslint.config(
       ".vinext/**",
       ".wrangler/**",
       "dist/**",
+      "out/**",
       "node_modules/**",
       "next-env.d.ts",
     ],
