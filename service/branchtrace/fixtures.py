@@ -24,7 +24,7 @@ BASE_NODES: list[dict[str, Any]] = [
     {
         "id": "mlp-7-3",
         "label": "MLP 7 · F3",
-        "detail": "Relational composition",
+        "detail": "Intermediate composition",
         "layer": 7,
         "kind": "mlp",
         "contribution": 0.42,
@@ -51,8 +51,8 @@ BASE_NODES: list[dict[str, Any]] = [
     },
     {
         "id": "feature-812",
-        "label": "Feature 812",
-        "detail": "Capital-city association",
+        "label": "SAE feature 812",
+        "detail": "Competing output path",
         "layer": 13,
         "kind": "sae",
         "contribution": -0.31,
@@ -60,8 +60,8 @@ BASE_NODES: list[dict[str, Any]] = [
     },
     {
         "id": "feature-1092",
-        "label": "Feature 1,092",
-        "detail": "Answer-token promotion",
+        "label": "SAE feature 1,092",
+        "detail": "Output promotion",
         "layer": 17,
         "kind": "sae",
         "contribution": 0.76,

@@ -30,6 +30,10 @@ test("all studies include typed layer-river and circuit-graph data", () => {
     assert.ok(demo.features.every((feature) => Number.isFinite(feature.activationSigma)));
     assert.ok(demo.edges.some((edge) => edge.path === "residual"));
     assert.ok(demo.edges.some((edge) => edge.contribution < 0));
+    assert.equal(
+      demo.features.find((feature) => feature.id === "feature-812")?.detail,
+      "Competing output path",
+    );
   }
 });
 

@@ -16,6 +16,8 @@ type IconName =
   | "layers"
   | "spark"
   | "compare"
+  | "moon"
+  | "sun"
   | "play"
   | "check"
   | "arrow"
@@ -28,6 +30,8 @@ function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
     layers: "▱",
     spark: "✦",
     compare: "⇄",
+    moon: "◐",
+    sun: "☼",
     play: "▶",
     check: "✓",
     arrow: "→",
@@ -38,6 +42,45 @@ function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
     <span className={`icon icon-${name}`} style={{ fontSize: size }} aria-hidden="true">
       {glyphs[name]}
     </span>
+  );
+}
+
+type Theme = "light" | "dark";
+
+function initialTheme(): Theme {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+}
+
+function ThemeToggle() {
+  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const nextTheme = theme === "light" ? "dark" : "light";
+
+  function toggleTheme() {
+    document.documentElement.dataset.theme = nextTheme;
+    document.documentElement.style.colorScheme = nextTheme;
+    try {
+      window.localStorage.setItem("branchtrace-theme", nextTheme);
+    } catch {
+      // The visual toggle still works when storage is unavailable.
+    }
+    setTheme(nextTheme);
+  }
+
+  return (
+    <button
+      className="theme-toggle"
+      type="button"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${nextTheme} theme`}
+      aria-pressed={theme === "dark"}
+      title={`Switch to ${nextTheme} theme`}
+      data-testid="theme-toggle"
+      suppressHydrationWarning
+    >
+      <Icon name={theme === "light" ? "sun" : "moon"} />
+      <span suppressHydrationWarning>{theme === "light" ? "Light" : "Dark"}</span>
+    </button>
   );
 }
 
@@ -285,6 +328,7 @@ export function BranchTraceApp() {
         </nav>
         <div className="header-actions">
           <span className="status-pill"><span /> Cached model run</span>
+          <ThemeToggle />
           <a className="docs-button" href="http://localhost:8000/docs" target="_blank" rel="noreferrer">
             API docs <Icon name="arrow" />
           </a>
@@ -331,13 +375,13 @@ export function BranchTraceApp() {
               <h1>{demo.prompt}<span className="cursor" /></h1>
               <div className="run-meta">
                 <span>{demo.model}</span>
-                <span>18 layers</span>
-                <span>2,048 SAE features</span>
+                <span>fixture depth L0–L18</span>
+                <span>fixture dictionary · 2,048 SAE features</span>
                 <span>cached · deterministic</span>
               </div>
             </div>
             <div className="answer-chip">
-              <span>next token</span>
+              <span>model completion</span>
               <strong>{demo.answer}</strong>
               <small>{demo.confidence}%</small>
             </div>
@@ -398,7 +442,11 @@ export function BranchTraceApp() {
             <div className="graph-caption">
               <span><Icon name="spark" /> Attribution hypothesis</span>
               <p>{demo.explanation}</p>
-              <strong>{demo.features.length} / 2,048 features shown</strong>
+              <strong>
+                {`${demo.features.length}-node subgraph · ${
+                  demo.features.filter((feature) => feature.kind === "sae").length
+                } SAE features`}
+              </strong>
             </div>
           </section>
 

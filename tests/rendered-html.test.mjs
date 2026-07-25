@@ -26,6 +26,9 @@ test("server-renders the finished BranchTrace product shell", async () => {
   assert.match(html, /Run branched execution/i);
   assert.match(html, /MODEL VERSION DIFF/i);
   assert.match(html, /Interpretation boundary/i);
+  assert.match(html, /Switch to dark theme/i);
+  assert.match(html, /model completion/i);
+  assert.match(html, /8-node subgraph/i);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
@@ -42,10 +45,12 @@ test("ships interaction hooks and removes starter-only metadata", async () => {
   assert.match(app, /data-testid="divergence-marker"/);
   assert.match(app, /data-testid="view-graph"/);
   assert.match(app, /data-testid="changed-components"/);
+  assert.match(app, /data-testid="theme-toggle"/);
   assert.match(app, /runFixtureIntervention/);
   assert.match(app, /setBranched\(true\)/);
   assert.match(layout, /BranchTrace — Model Circuit Explorer/);
   assert.match(layout, /\/og\.png/);
+  assert.match(layout, /branchtrace-theme/);
   assert.doesNotMatch(layout, /Starter Project|codex-preview/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });

@@ -3,9 +3,29 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { BranchTraceApp } from "../app/branchtrace-app";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  document.documentElement.dataset.theme = "light";
+  window.localStorage.clear();
+});
 
 describe("BranchTraceApp interactions", () => {
+  it("switches theme accessibly and persists the preference", async () => {
+    const user = userEvent.setup();
+    render(<BranchTraceApp />);
+
+    const toggle = screen.getByTestId("theme-toggle");
+    expect(toggle.getAttribute("aria-label")).toBe("Switch to dark theme");
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+
+    await user.click(toggle);
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(document.documentElement.style.colorScheme).toBe("dark");
+    expect(window.localStorage.getItem("branchtrace-theme")).toBe("dark");
+    expect(toggle.getAttribute("aria-label")).toBe("Switch to light theme");
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("switches between distinct Layer River and Circuit Graph views", async () => {
     const user = userEvent.setup();
     render(<BranchTraceApp />);

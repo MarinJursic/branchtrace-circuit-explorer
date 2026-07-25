@@ -1,6 +1,7 @@
 {
   "name": "branchtrace-circuit-explorer",
   "version": "0.1.0",
+  "description": "Mechanistic-interpretability workbench for tracing neural circuits, branching activations, and testing causal hypotheses with reproducible counterfactuals.",
   "private": true,
   "engines": {
     "node": ">=22.13.0"

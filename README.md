@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.140-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-36%20passing-1d7d69)](#verification)
+[![Tests](https://img.shields.io/badge/tests-37%20passing-1d7d69)](#verification)
 [![npm audit](https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-1d7d69)](#verification)
 
 BranchTrace is a portfolio-quality mechanistic-interpretability workbench. It turns a cached activation summary into a compact circuit hypothesis, lets the user branch an execution at an influential component, and makes the resulting counterfactual easy to inspect:
@@ -19,15 +19,28 @@ BranchTrace is a portfolio-quality mechanistic-interpretability workbench. It tu
 
 No credentials, model weights, or GPU are required. The included examples are deterministic public-model-style fixtures, so the entire interaction is reproducible on a laptop.
 
-![BranchTrace live application showing the study selector, Layer River, circuit graph controls, and intervention lab](docs/media/branchtrace-live.png)
+## Showcase
 
-The PNG above is a literal capture of the running application at `http://localhost:3000`. The short loop below is a designed motion overview of the branching metaphor; it is presentation media, not model evidence.
+![BranchTrace concept overview: a baseline circuit branches at an intervention into a changed counterfactual execution](public/og.png)
 
-![BranchTrace four-second animated overview](docs/media/branchtrace-overview.gif)
+**The idea in one frame.** Teal is the cached baseline path; amber is the counterfactual branch after an intervention. The marked junction is the first layer where the deterministic fixture reports a meaningful downstream change.
 
-<p align="center">
-  <img src="public/og.png" alt="BranchTrace circuit river splitting at a first divergence" width="100%" />
-</p>
+<table>
+  <tr>
+    <td width="54%">
+      <img src="docs/media/branchtrace-live.png" alt="Literal BranchTrace application capture with the factual-recall study and selected SAE feature 423" />
+    </td>
+    <td width="46%">
+      <img src="docs/media/branchtrace-overview.gif" alt="Four-second BranchTrace motion overview showing a circuit split into baseline and counterfactual branches" />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Literal application capture.</strong> Pick a study on the left, inspect estimated contribution paths in the center, and configure the selected component in the intervention lab.</td>
+    <td><strong>Four-second workflow overview.</strong> Select a component, create a branch, and compare the unchanged baseline with the counterfactual output. This is explanatory presentation media—not model evidence.</td>
+  </tr>
+</table>
+
+The included showcase is deliberately legible without interpretability background: path width means larger fixture-estimated contribution, teal/red mean positive/negative contribution, and amber appears only after a branch reports downstream divergence. All media lives in the repository, so it renders on GitHub without an external host.
 
 ## Why this exists
 
@@ -43,7 +56,7 @@ BranchTrace does **not** claim to reveal private chain-of-thought, a definitive 
 
 ## Product walkthrough
 
-1. Choose one of four built-in studies: factual recall, translation register, refusal behavior, or arithmetic carry.
+1. Choose one of four built-in studies: factual recall, translation register, refusal behavior, or arithmetic carry. Use the header control to switch between the light and dark themes; the preference persists on the device.
 2. The **Layer River** displays tokens, attention paths, MLP and SAE features, residual flow, and the output logit. Path width encodes estimated contribution; color distinguishes positive and negative influence.
 3. Switch to **Circuit Graph** for a node-link view whose edge labels identify attention, MLP, residual, and logit paths.
 4. Click a component. The intervention lab shows its layer, activation magnitude, attribution score, and fixture expectations.
@@ -63,7 +76,7 @@ First divergence: Layer 17
 Changed answer: “Lyon”  (61.8%)
 ```
 
-The numbers above are deterministic demonstration data. They validate the product and API workflow; they are not measurements from Gemma or any other downloaded checkpoint.
+The numbers above are deterministic demonstration data. `L0–L18` is a normalized fixture-depth axis, not a claim that every displayed item is a transformer block. The displayed answer is a model completion and may span multiple tokens. These values validate the product and API workflow; they are not measurements from Gemma or any other downloaded checkpoint.
 
 ## Architecture
 
@@ -91,7 +104,7 @@ flowchart LR
 | `app/globals.css` | Responsive research-console visual system and graph styling |
 | `app/layout.tsx` | Product metadata and social preview |
 
-Both visualizations are purpose-built and dependency-light: contribution paths are rendered in SVG, while nodes remain semantic HTML buttons with visible keyboard focus and `aria-pressed` state. The Layer River emphasizes depth and flow; the Circuit Graph emphasizes topology and typed edges. The UI honors reduced-motion preferences and reflows for tablet/mobile layouts.
+Both visualizations are purpose-built and dependency-light: contribution paths are rendered in SVG, while nodes remain semantic HTML buttons with visible keyboard focus and `aria-pressed` state. The Layer River emphasizes depth and flow; the Circuit Graph emphasizes topology and typed edges. The UI provides tested light and dark themes, initializes from the saved preference or system preference without a theme flash, honors reduced-motion preferences, and reflows for tablet/mobile layouts.
 
 ### Python service
 
@@ -196,7 +209,7 @@ Verified locally:
 | --- | --- |
 | Vinext/Next.js production build | Passed |
 | Browser-side circuit/intervention semantics | 5 passed |
-| DOM interaction workflows (views, demos, all modes, diffs) | 5 passed |
+| DOM interaction workflows (theme persistence, views, demos, all modes, diffs) | 6 passed |
 | Server-rendered product and metadata tests | 2 passed |
 | ESLint | Passed |
 | TypeScript compiler (`--noEmit`) | Passed |
@@ -206,7 +219,7 @@ Verified locally:
 | Live HTTP smoke (`/`, `/health`, `/v1/interventions`) | Passed |
 | npm production/development dependency audit | 0 vulnerabilities |
 
-The 36 checks cover typed graph synthesis, high-influence suppression, low-score controls, amplification, patch provenance, replay stability, intervention-at-logit ordering, study-specific labels, safe refusal counterfactuals, adapter target/shape validation, invalid IDs and request fields, API health, and a complete answer-changing workflow. Source-presence assertions are supplementary; branch semantics are executed directly in TypeScript and Python.
+The 37 checks cover theme persistence, typed graph synthesis, high-influence suppression, low-score controls, amplification, patch provenance, replay stability, intervention-at-logit ordering, study-specific labels, safe refusal counterfactuals, adapter target/shape validation, invalid IDs and request fields, API health, and a complete answer-changing workflow. Source-presence assertions are supplementary; branch semantics are executed directly in TypeScript and Python.
 
 ## From fixture to real model
 
@@ -241,8 +254,9 @@ BranchTrace’s design is informed by primary sources:
 - Anthropic’s [Tracing Attention Computation Through Feature Interactions](https://transformer-circuits.pub/2025/attention-qk/index.html) extends attribution graphs to attention feature interactions.
 - Bricken et al., [Towards Monosemanticity](https://transformer-circuits.pub/2023/monosemantic-features/index.html), demonstrates sparse-autoencoder feature decomposition and basic circuit analysis.
 - Templeton et al., [Scaling Monosemanticity](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html), studies SAE features at production-model scale while documenting important limitations.
-- Heimersheim and Nanda, [How to use and interpret activation patching](https://arxiv.org/abs/2404.15255), explains what evidence patching provides and how metric choices can confound interpretation.
-- Kramár et al., [AtP*: An efficient and scalable method for localizing LLM behaviour to components](https://arxiv.org/abs/2403.00745), evaluates scalable attribution-patching approximations and their failure modes.
+- Heimersheim and Nanda, [How to use and interpret activation patching](https://arxiv.org/abs/2404.15255), explains what evidence patching provides and why metric choice and corruption design can change the conclusion.
+- Zhang and Nanda, [Towards Best Practices of Activation Patching in Language Models](https://arxiv.org/abs/2309.16042), systematically finds that metric and corruption-method choices can produce disparate localization results.
+- Kramár et al., [AtP*: An efficient and scalable method for localizing LLM behaviour to components](https://arxiv.org/abs/2403.00745), evaluates scalable attribution-patching approximations and documents false-negative failure modes.
 
 These references motivate the intervention-first workflow; they do not validate the included fixture values.
 

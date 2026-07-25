@@ -58,7 +58,7 @@ button {
 
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--amber);
+  outline: 3px solid var(--teal-dark);
   outline-offset: 3px;
 }
 
@@ -158,6 +158,32 @@ a:focus-visible {
 
 .header-actions {
   gap: 10px;
+}
+
+.theme-toggle {
+  align-items: center;
+  background: transparent;
+  border: 1px solid #c7c0b5;
+  border-radius: 5px;
+  color: #5f5a52;
+  display: flex;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 9px;
+  text-transform: uppercase;
+}
+
+.theme-toggle:hover {
+  background: rgba(17, 23, 20, 0.06);
+  border-color: #9e978c;
+}
+
+.theme-toggle .icon {
+  color: var(--teal-dark);
+  font-size: 14px !important;
 }
 
 .status-pill {
@@ -1455,6 +1481,217 @@ kbd {
   font-family: Georgia, serif;
 }
 
+html[data-theme="dark"] {
+  background: #0d1310;
+}
+
+html[data-theme="dark"] body {
+  background:
+    linear-gradient(rgba(233, 229, 220, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(233, 229, 220, 0.025) 1px, transparent 1px),
+    #101713;
+  color: #ece9e1;
+}
+
+html[data-theme="light"] .brand-subtitle,
+html[data-theme="light"] .sidebar-heading,
+html[data-theme="light"] .demo-card em,
+html[data-theme="light"] .run-meta,
+html[data-theme="light"] .answer-row small,
+html[data-theme="light"] .execution-label,
+html[data-theme="light"] .feature-stats dt,
+html[data-theme="light"] .runtime-estimate,
+html[data-theme="light"] .checks li,
+html[data-theme="light"] .panel-footnote {
+  color: #625d55;
+}
+
+html[data-theme="dark"] button:focus-visible,
+html[data-theme="dark"] a:focus-visible {
+  outline-color: var(--amber);
+}
+
+html[data-theme="dark"] .topbar {
+  background: rgba(16, 23, 19, 0.94);
+  border-color: #344139;
+}
+
+html[data-theme="dark"] .brand-name,
+html[data-theme="dark"] .topnav a.active,
+html[data-theme="dark"] .run-header h1,
+html[data-theme="dark"] .section-title h2,
+html[data-theme="dark"] .version-diff h2,
+html[data-theme="dark"] .panel-heading,
+html[data-theme="dark"] .feature-stats dd,
+html[data-theme="dark"] .answer-row strong {
+  color: #f4f1e9;
+}
+
+html[data-theme="dark"] .topnav a,
+html[data-theme="dark"] .brand-subtitle,
+html[data-theme="dark"] .run-meta,
+html[data-theme="dark"] .sidebar-heading,
+html[data-theme="dark"] .eyebrow,
+html[data-theme="dark"] .mode-label,
+html[data-theme="dark"] .evidence-title {
+  color: #a9b2ac;
+}
+
+html[data-theme="dark"] .demo-sidebar,
+html[data-theme="dark"] .intervention-panel,
+html[data-theme="dark"] .feature-stats,
+html[data-theme="dark"] .panel-divider,
+html[data-theme="dark"] .version-diff,
+html[data-theme="dark"] .sidebar-note {
+  border-color: #344139;
+}
+
+html[data-theme="dark"] .intervention-panel {
+  background: #151e19;
+}
+
+html[data-theme="dark"] .demo-card:hover {
+  background: rgba(255, 255, 255, 0.045);
+  border-color: #405047;
+}
+
+html[data-theme="dark"] .demo-card.active {
+  background: #e9e5dc;
+  border-color: #e9e5dc;
+  color: #111714;
+}
+
+html[data-theme="dark"] .demo-card.active em {
+  color: #536058;
+}
+
+html[data-theme="dark"] .demo-card.active .demo-number,
+html[data-theme="dark"] .demo-card.active small {
+  color: #126b59;
+}
+
+html[data-theme="dark"] .sidebar-note,
+html[data-theme="dark"] .sidebar-note strong,
+html[data-theme="dark"] .checks li,
+html[data-theme="dark"] .panel-footnote,
+html[data-theme="dark"] .intervention-detail p,
+html[data-theme="dark"] .execution-label,
+html[data-theme="dark"] .execution-path {
+  color: #a9b2ac;
+}
+
+html[data-theme="dark"] .status-pill,
+html[data-theme="dark"] .theme-toggle {
+  border-color: #435148;
+  color: #c0c8c3;
+}
+
+html[data-theme="dark"] .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: #68786f;
+}
+
+html[data-theme="dark"] .theme-toggle .icon {
+  color: var(--teal);
+}
+
+html[data-theme="dark"] .answer-chip {
+  background: #1d2822;
+  border-color: #435148;
+}
+
+html[data-theme="dark"] .answer-chip span {
+  color: #a9b2ac;
+}
+
+html[data-theme="dark"] .answer-chip strong {
+  color: #f4f1e9;
+}
+
+html[data-theme="dark"] .execution-card {
+  background: rgba(24, 34, 29, 0.9);
+  border-color: #3a4941;
+}
+
+html[data-theme="dark"] .execution-card.branch.revealed {
+  background: #2b261e;
+  border-color: #9f7441;
+}
+
+html[data-theme="dark"] .execution-label > span {
+  background: #e9e5dc;
+  color: #111714;
+}
+
+html[data-theme="dark"] .confidence-track {
+  background: #3b4841;
+}
+
+html[data-theme="dark"] .branch-junction {
+  background: #101713;
+  color: #aab3ae;
+}
+
+html[data-theme="dark"] .branch-status span {
+  border-color: #46534c;
+  color: #a9b2ac;
+}
+
+html[data-theme="dark"] .selected-feature {
+  background: #0d1310;
+  border: 1px solid #38473f;
+}
+
+html[data-theme="dark"] .mode-control {
+  background: #26312b;
+}
+
+html[data-theme="dark"] .mode-control button {
+  color: #aab4ae;
+}
+
+html[data-theme="dark"] .mode-control button.active {
+  background: #e9e5dc;
+  color: #111714;
+}
+
+html[data-theme="dark"] .intervention-detail {
+  background: #202b25;
+  border-color: #3d4a43;
+}
+
+html[data-theme="dark"] .intervention-detail strong {
+  color: #edeae2;
+}
+
+html[data-theme="dark"] .run-button {
+  background: #e9e5dc;
+  color: #111714;
+}
+
+html[data-theme="dark"] .run-button:hover {
+  background: #fbfaf6;
+}
+
+html[data-theme="dark"] .runtime-estimate,
+html[data-theme="dark"] .feature-stats dt {
+  color: #9fa9a3;
+}
+
+html[data-theme="dark"] .diff-summary {
+  border: 1px solid #3a4941;
+}
+
+html[data-theme="dark"] .checks .icon {
+  background: rgba(102, 214, 189, 0.12);
+  color: var(--teal);
+}
+
+html[data-theme="dark"] .checks strong,
+html[data-theme="dark"] .feature-stats dd.teal {
+  color: var(--teal);
+}
+
 @media (max-width: 1180px) {
   .workspace {
     grid-template-columns: 190px minmax(580px, 1fr);
@@ -1592,15 +1829,5 @@ kbd {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
   }
 }
