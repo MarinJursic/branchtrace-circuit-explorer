@@ -22,19 +22,33 @@ BranchTrace is a portfolio-quality mechanistic-interpretability workbench. It tu
 
 No credentials, model weights, or GPU are required. The included examples are deterministic public-model-style fixtures, so the entire interaction is reproducible on a laptop.
 
-## Showcase
+## Continuous app walkthrough
 
-![BranchTrace concept overview: a baseline circuit branches at an intervention into a changed counterfactual execution](public/og.png)
+[![Continuous BranchTrace walkthrough showing circuit inspection, causal interventions, and model-version comparison](docs/walkthrough/app-walkthrough.gif)](docs/walkthrough/app-walkthrough.mp4)
 
-**The idea in one frame.** Teal is the cached baseline path; amber is the counterfactual branch after an intervention. The marked junction is the first layer where the deterministic fixture reports a meaningful downstream change.
+[Watch the full-resolution H.264 walkthrough](docs/walkthrough/app-walkthrough.mp4) · [Open the poster frame](docs/walkthrough/app-walkthrough-poster.jpg)
 
-![Literal BranchTrace application capture with the factual-recall study and selected SAE feature 423](docs/media/branchtrace-live.png)
+This uninterrupted 20-second capture shows the running application moving from
+the Layer River to the Circuit Graph, suppressing the high-influence
+`SAE feature 423`, and materializing a counterfactual branch in which the answer
+changes from **Paris** to **Lyon** at the first meaningful divergence. It then
+selects low-score `SAE feature 812`, reruns the same intervention as a control,
+and shows that the answer is preserved with no threshold-crossing downstream
+nodes. The final state opens the model-version comparison to expose the
+fixture’s layer shift and causal-precision delta.
 
-This is a capture of the running application, not an explanatory animation. Pick a
-study on the left, inspect estimated contribution paths in the center, and configure
-the selected component in the intervention lab. Path width means larger
-fixture-estimated contribution, teal/red mean positive/negative contribution, and
-amber appears only after a branch reports downstream divergence.
+Every frame is a continuous capture of the actual interface. Path width encodes
+larger fixture-estimated contribution, teal/red distinguish positive and
+negative contribution, and amber appears only after a branch reports downstream
+divergence.
+
+### Literal still frame
+
+![BranchTrace application with the factual-recall study and selected SAE feature 423](docs/media/branchtrace-live.png)
+
+The static frame preserves the complete three-column workspace for closer
+inspection: precomputed studies, the selected circuit hypothesis, and the
+intervention lab.
 
 ## Why this exists
 
