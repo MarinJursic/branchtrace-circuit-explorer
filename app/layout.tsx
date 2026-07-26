@@ -7,24 +7,24 @@ const imageUrl = new URL(`${basePath}/og.png`, metadataBase).toString();
 
 export const metadata: Metadata = {
   metadataBase,
-  title: "BranchTrace — Model Circuit Explorer",
+  title: "BranchTrace",
   description:
-    "Branch neural-network computations, intervene on influential features, and compare deterministic counterfactual executions.",
+    "Trace a circuit hypothesis, replay a stored intervention, and validate the result.",
   icons: {
     icon: `${basePath}/favicon.svg`,
     shortcut: `${basePath}/favicon.svg`,
   },
   openGraph: {
-    title: "BranchTrace — Model Circuit Explorer",
+    title: "BranchTrace",
     description:
-      "Interactive, intervention-first circuit hypotheses for public-model-style activation traces.",
+      "An intervention-first notebook for circuit hypotheses.",
     images: [{ url: imageUrl, width: 1672, height: 941, alt: "BranchTrace model circuit explorer" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BranchTrace — Model Circuit Explorer",
+    title: "BranchTrace",
     description:
-      "Branch neural-network computations and inspect the first meaningful divergence.",
+      "Trace a circuit hypothesis, intervene, and validate the result.",
     images: [imageUrl],
   },
 };

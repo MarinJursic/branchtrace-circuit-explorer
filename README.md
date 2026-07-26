@@ -1,29 +1,28 @@
-# BranchTrace Model Circuit Explorer
+# BranchTrace
 
-> A debugger-style workbench for circuit hypotheses and stored interventions.
+> An intervention-first notebook for testing circuit hypotheses.
 
-[![Live preview](https://img.shields.io/badge/live-preview-2ea44f?logo=github)](https://marinjursic.github.io/branchtrace-circuit-explorer/)
-[![Preview status](https://github.com/MarinJursic/branchtrace-circuit-explorer/actions/workflows/pages.yml/badge.svg)](https://github.com/MarinJursic/branchtrace-circuit-explorer/actions/workflows/pages.yml)
+[![Live preview](https://img.shields.io/badge/live-preview-2ea44f?logo=github)](https://marinjursic.github.io/BranchTrace/)
+[![Preview status](https://github.com/MarinJursic/BranchTrace/actions/workflows/pages.yml/badge.svg)](https://github.com/MarinJursic/BranchTrace/actions/workflows/pages.yml)
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-111714?logo=nextdotjs)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.140-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-46%20passing-176BCA)](#verification)
+[![Tests](https://img.shields.io/badge/tests-50%20passing-176BCA)](#verification)
 [![npm audit](https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-1d7d69)](#verification)
 
-BranchTrace is a mechanistic-interpretability IDE. It turns a cached artifact into a
-testable circuit hypothesis, lets the user replay a stored intervention at a selected
-component, and keeps attribution, intervention, validation, and provenance visible in
-one keyboard-friendly workbench:
+BranchTrace turns a cached artifact into a testable circuit hypothesis. Its numbered
+notebook moves in one direction—**Trace → Intervene → Validate**—so the graph is never
+mistaken for the conclusion:
 
-- open multiple materially different circuit artifacts in editor tabs;
-- search, zoom, fit, inspect a minimap, or switch to an accessible node table;
+- move between four materially different fixture studies from a compact index;
+- read the same circuit as a topology graph, a layer-ordered river, or an accessible table;
 - select an attention head, MLP, sparse feature, error node, or output logit;
 - **suppress**, **amplify**, or **patch** its activation;
 - compare baseline and result logits;
 - inspect the attributed delta, stored intervention delta, and unexplained residual;
-- audit an exact artifact manifest.
+- disclose the exact artifact manifest only when it is needed.
 
 No credentials, model weights, or GPU are required. The four included examples are
 locally authored deterministic fixtures with different graph topologies:
@@ -46,16 +45,12 @@ checkpoint was downloaded or executed. Every surface shows
 
 [Watch the full-resolution H.264 walkthrough](docs/walkthrough/app-walkthrough.mp4) · [Open the poster frame](docs/walkthrough/app-walkthrough-poster.jpg)
 
-The walkthrough uses only recordings of the running IDE. It opens the two-digit
-carry study, selects the Carry-one feature, moves between Circuit Graph and Layer
-River, runs a stored patch branch, compares the result, reviews Validation and
-Provenance, and finishes in the complete light-theme workbench.
-
-A slow 16:9 camera crop keeps both the graph and lower analysis panel readable, and
-a soft dissolve joins the live branch result to the live Validation/Provenance
-review. No interface screen is mocked or generated. Path width encodes larger
-fixture-estimated contribution, teal/red distinguish positive and negative
-contribution, and amber appears only after a branch reports downstream divergence.
+The walkthrough uses only the running application. It opens the two-digit carry
+study, reads the Graph and River representations, selects the Carry-one feature,
+runs a stored patch branch, and follows the page into validation and provenance.
+No interface screen is mocked or generated. Path width encodes larger authored
+fixture contribution; line style, labels, and color distinguish positive,
+negative, residual, and branch-changed paths.
 
 ## Why this exists
 
@@ -71,24 +66,23 @@ BranchTrace does **not** claim to reveal private chain-of-thought, a definitive 
 
 ## Product walkthrough
 
-1. Open one of four artifacts from the Explorer. Each opens in a persistent editor
-   tab with a different node/edge topology.
+1. Choose one of four artifacts from the numbered study index.
 2. The **Circuit Graph** displays tokens, attention paths, MLP/SAE/error features,
-   residual flow, and the output logit. Search, zoom, fit, minimap, keyboard node
-   navigation, and an accessible table provide equivalent ways to inspect it.
-3. Switch to **Layer River** for a depth-oriented view.
-4. Click a component. The Inspector shows its layer, activation magnitude,
-   attribution score, stored token examples, and artifact identifier.
+   residual flow, and the output logit. Only paths touching the selected component
+   receive labels, which prevents the graph from turning into a wall of annotations.
+3. Switch to **Layer River** for a depth-ordered view, or **Table** for the same
+   important values in an accessible text representation.
+4. Select a component. The evidence column shows its fixture depth, activation
+   magnitude, attribution score, stored token examples, and artifact identifier.
 5. Choose:
    - **Suppress** — scale the selected activation to zero.
    - **Amplify** — scale it to `1.80×`.
    - **Patch** — replace it with a contrast-run activation.
-6. Run the branch. The bottom panel reports the baseline and result logit, stored
-   observed delta, attributed delta, unexplained residual, changed nodes, and first
-   stored downstream change. It never labels a fixture percentage as confidence.
-7. Open **Validation** for the attribution-versus-intervention contract and
-   **Provenance** for schema, evidence class, exact artifact ID, hashes, source, and
-   caveat.
+6. Run the branch. The result reports the baseline and result logit, observed
+   fixture delta, changed nodes, and first stored downstream change.
+7. Continue to **Validate** for the attribution-versus-intervention contract.
+   Expand provenance only when the schema, evidence class, hashes, source, or caveat
+   is needed. The interface never labels a fixture percentage as confidence.
 
 The default fixture is intentionally easy to read:
 
@@ -110,7 +104,7 @@ other downloaded checkpoint.
 
 ```mermaid
 flowchart LR
-    UI["Next.js / TypeScript IDE"] --> Fixtures["Four distinct artifact fixtures"]
+    UI["Next.js / TypeScript notebook"] --> Fixtures["Four distinct artifact fixtures"]
     UI --> Views["Graph + river + accessible table"]
     UI --> Branch["Stored intervention replay"]
     API["FastAPI service"] --> Engine["Deterministic circuit engine"]
@@ -127,12 +121,25 @@ flowchart LR
 
 | Surface | Responsibility |
 | --- | --- |
-| `app/branchtrace-app.tsx` | Activity bar, Explorer, editor tabs, graph tools, Inspector, command palette, accessible table, and bottom analysis panel |
+| `app/branchtrace-app.tsx` | Numbered study index, graph/river/table trace, evidence, intervention, validation, and provenance disclosure |
 | `app/circuit-data.ts` | Four distinct typed artifacts, exact manifests, and stored logit/intervention measurements |
-| `app/globals.css` | Responsive debugger-IDE visual system and light/dark graph styling |
+| `app/globals.css` | Responsive editorial-notebook system with light/dark graph styling |
 | `app/layout.tsx` | Product metadata and social preview |
 
-Both visualizations are purpose-built and dependency-light: contribution paths are rendered in SVG, while nodes remain semantic HTML buttons with visible keyboard focus and `aria-pressed` state. The Layer River emphasizes depth and flow; the Circuit Graph emphasizes topology and typed edges. The UI provides tested light and dark themes, initializes from the saved preference or system preference without a theme flash, honors reduced-motion preferences, and reflows for tablet/mobile layouts.
+Both visualizations are purpose-built and dependency-light: contribution paths are
+rendered in SVG, while nodes remain semantic HTML buttons with visible keyboard
+focus and `aria-pressed` state. The Layer River prevents same-layer nodes from
+overlapping by assigning them explicit vertical lanes; the Circuit Graph preserves
+the authored topology and applies only collision-safe horizontal nudges. A tested,
+horizontally scrollable minimum canvas keeps labels intact
+on narrow screens instead of shrinking them into illegibility. The UI provides
+tested light and dark themes, initializes from the saved preference or system
+preference without a theme flash, honors reduced-motion preferences, and reflows for
+tablet/mobile layouts. At 1280 pixels, the evidence column moves below the full-width
+trace so the complete graph remains visible. Phone layouts replace the wide detail
+canvas with a complete compact labeled overview; Table remains the interactive
+text-equivalent. Automated contrast checks enforce WCAG AA for every light-theme
+small-text token and the primary hover state.
 
 ### Python service
 
@@ -233,7 +240,7 @@ npm run verify
 ```
 
 `npm run verify` builds the production worker, type-checks and lints the web app,
-runs 14 Vitest component/interaction checks and 7 Node circuit/rendering checks,
+runs 17 Vitest component/interaction checks and 8 Node circuit/rendering checks,
 checks the Python service with Ruff, runs 25 engine/API tests, and audits npm
 dependencies. The individual Python test command is:
 
@@ -246,8 +253,8 @@ Verified locally:
 | Check | Result |
 | --- | --- |
 | Vinext/Next.js production build | Passed |
-| Vitest component, interaction, geometry, and validation tests | 14 passed |
-| Node circuit-engine and server-rendered product tests | 7 passed |
+| Vitest component, interaction, geometry, and validation tests | 17 passed |
+| Node circuit-engine, contrast, and server-rendered product tests | 8 passed |
 | ESLint | Passed |
 | TypeScript compiler (`--noEmit`) | Passed |
 | Python formatting and linting (Ruff) | Passed |
@@ -256,7 +263,7 @@ Verified locally:
 | Live HTTP smoke (`/`, `/health`, `/v1/interventions`) | Passed |
 | npm production/development dependency audit | 0 vulnerabilities |
 
-The 46 tests comprise 14 Vitest checks, 7 Node test-runner checks, and 25 Python
+The 50 tests comprise 17 Vitest checks, 8 Node test-runner checks, and 25 Python
 checks. Together they cover theme persistence, typed graph synthesis, materially
 distinct topologies, stored suppression/patch/amplification, negative controls,
 logit deltas, residual accounting, provenance, replay stability, artifact-specific
@@ -292,6 +299,9 @@ The next research-grade evaluation would report faithfulness, completeness, spar
 
 BranchTrace’s design is informed by primary sources:
 
+- Google’s [Material 3 Expressive research](https://design.google/library/expressive-material-design-google-research) motivates using hierarchy to pull attention toward the next meaningful action, without importing the visual style of a generic dashboard.
+- W3C’s [WCAG 2.2](https://www.w3.org/TR/WCAG22/) and [ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/) inform visible focus, target sizing, disclosure, radio-group, and pressed-state behavior.
+- The UK Government’s [data visualisation guidance](https://brand.design-system.service.gov.uk/data/) motivates the text-equivalent table and the use of line style and labels in addition to color.
 - Anthropic’s [Circuit Tracing: Revealing Computational Graphs in Language Models](https://transformer-circuits.pub/2025/attribution-graphs/methods.html) introduces attribution graphs built with cross-layer transcoders and emphasizes validation tooling.
 - Anthropic’s [Tracing Attention Computation Through Feature Interactions](https://transformer-circuits.pub/2025/attention-qk/index.html) extends attribution graphs to attention feature interactions.
 - Bricken et al., [Towards Monosemanticity](https://transformer-circuits.pub/2023/monosemantic-features/index.html), demonstrates sparse-autoencoder feature decomposition and basic circuit analysis.

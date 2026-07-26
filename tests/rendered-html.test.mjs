@@ -19,18 +19,18 @@ test("server-renders the finished BranchTrace product shell", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>BranchTrace — Model Circuit Explorer<\/title>/i);
+  assert.match(html, /<title>BranchTrace<\/title>/i);
   assert.match(html, /BranchTrace/);
-  assert.match(html, /Mechanistic Debugger IDE/i);
-  assert.match(html, /Precomputed studies/i);
-  assert.match(html, /Run branched execution/i);
-  assert.match(html, /MODEL VERSION DIFF/i);
-  assert.match(html, /Interpretation boundary/i);
+  assert.match(html, /Circuit hypotheses/i);
+  assert.match(html, /Choose a stored study/i);
+  assert.match(html, /Run stored branch/i);
+  assert.match(html, /Compare attribution with outcome/i);
+  assert.match(html, /Trace the candidate circuit/i);
   assert.match(html, /Switch to dark theme/i);
-  assert.match(html, /model completion/i);
-  assert.match(html, /9-node subgraph/i);
-  assert.match(html, /FIXTURE · NO MODEL RUNNING/i);
+  assert.match(html, /Stored completion/i);
+  assert.match(html, /Authored fixtures · no model running/i);
   assert.doesNotMatch(html, /starter-preview|Your site is taking shape|react-loading-skeleton/i);
+  assert.doesNotMatch(html, /command palette|minimap|graph\.json|main\*/i);
 });
 
 test("ships interaction hooks and removes starter-only metadata", async () => {
@@ -44,12 +44,12 @@ test("ships interaction hooks and removes starter-only metadata", async () => {
   assert.match(page, /<BranchTraceApp \/>/);
   assert.match(app, /data-testid="run-intervention"/);
   assert.match(app, /data-testid="divergence-marker"/);
-  assert.match(app, /data-testid="view-graph"/);
+  assert.match(app, /data-testid=\{`view-\$\{id\}`\}/);
   assert.match(app, /data-testid="changed-components"/);
   assert.match(app, /data-testid="theme-toggle"/);
   assert.match(app, /runFixtureIntervention/);
   assert.match(app, /setBranched\(true\)/);
-  assert.match(layout, /BranchTrace — Model Circuit Explorer/);
+  assert.match(layout, /title: "BranchTrace"/);
   assert.match(layout, /\/og\.png/);
   assert.match(layout, /branchtrace-theme/);
   assert.doesNotMatch(layout, /Starter Project|starter-preview/);

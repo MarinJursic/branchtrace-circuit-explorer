@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   demos,
   interventionCopy,
@@ -18,13 +12,13 @@ import {
   type InterventionMode,
 } from "./circuit-data";
 import {
-  fitGraphPoint,
+  layoutGraphPoints,
+  layoutRiverPoints,
   validationBarPercent,
-  type GraphPan,
 } from "./workbench-utils";
 
 type Theme = "light" | "dark";
-type BottomTab = "intervention" | "validation" | "provenance";
+type TraceView = CircuitView | "table";
 
 function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("light");
@@ -42,14 +36,14 @@ function ThemeToggle() {
     try {
       window.localStorage.setItem("branchtrace-theme", nextTheme);
     } catch {
-      // Theme still changes when storage is unavailable.
+      // The visual preference still applies when storage is unavailable.
     }
     setTheme(nextTheme);
   }
 
   return (
     <button
-      className="ide-icon-button theme-toggle"
+      className="text-action"
       type="button"
       onClick={toggleTheme}
       aria-label={`Switch to ${nextTheme} theme`}
@@ -57,12 +51,13 @@ function ThemeToggle() {
       data-testid="theme-toggle"
       suppressHydrationWarning
     >
-      <span aria-hidden="true">{theme === "light" ? "☼" : "◐"}</span>
+      <span aria-hidden="true">{theme === "light" ? "Dark" : "Light"}</span>
+      <i aria-hidden="true" />
     </button>
   );
 }
 
-function RunExplorer({
+function StudyIndex({
   active,
   onOpen,
 }: {
@@ -70,51 +65,25 @@ function RunExplorer({
   onOpen: (demo: Demo) => void;
 }) {
   return (
-    <aside className="run-explorer" aria-label="Run explorer">
-      <header>
-        <span>EXPLORER</span>
-      </header>
-      <section>
-        <h2>
-          <span aria-hidden="true">⌄</span> PRECOMPUTED STUDIES
-        </h2>
-        <div className="run-tree">
-          {demos.map((demo) => (
-            <button
-              type="button"
-              key={demo.id}
-              className={demo.id === active.id ? "active" : ""}
-              onClick={() => onOpen(demo)}
-              aria-pressed={demo.id === active.id}
-              data-testid={`demo-${demo.id}`}
-            >
-              <span className="file-dot" data-kind={demo.task} />
-              <span>
-                <strong>{demo.title}</strong>
-                <small>{demo.task}</small>
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
-      <section>
-        <h2>
-          <span aria-hidden="true">⌄</span> ARTIFACTS
-        </h2>
-        <ul className="artifact-tree">
-          <li>graph.json</li>
-          <li>manifest.json</li>
-          <li>interventions.json</li>
-        </ul>
-      </section>
-      <section className="explorer-note" id="method">
-        <h2>INTERPRETATION BOUNDARY</h2>
-        <p>
-          Attribution graphs are hypotheses. Every example here is an explicitly
-          labeled deterministic fixture, not hidden reasoning or a live model run.
-        </p>
-      </section>
-    </aside>
+    <nav className="study-index" aria-label="Fixture studies">
+      <p>Choose a stored study</p>
+      <div>
+        {demos.map((demo, index) => (
+          <button
+            type="button"
+            key={demo.id}
+            className={demo.id === active.id ? "active" : ""}
+            onClick={() => onOpen(demo)}
+            aria-pressed={demo.id === active.id}
+            data-testid={`demo-${demo.id}`}
+          >
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <strong>{demo.title}</strong>
+            <small>{demo.task}</small>
+          </button>
+        ))}
+      </div>
+    </nav>
   );
 }
 
@@ -126,10 +95,6 @@ function GraphCanvas({
   changedIds,
   firstLayer,
   query,
-  zoom,
-  onZoom,
-  pan,
-  onPan,
 }: {
   demo: Demo;
   selectedId: string;
@@ -138,46 +103,45 @@ function GraphCanvas({
   changedIds: string[];
   firstLayer: number | null;
   query: string;
-  zoom: number;
-  onZoom: (value: number) => void;
-  pan: GraphPan;
-  onPan: (value: GraphPan) => void;
 }) {
   const featureById = useMemo(
     () => new Map(demo.features.map((feature) => [feature.id, feature])),
     [demo.features],
   );
+  const positions = useMemo(() => {
+    if (view === "river") return layoutRiverPoints(demo.features);
+    return layoutGraphPoints(demo.features);
+  }, [demo.features, view]);
   const loweredQuery = query.trim().toLowerCase();
-  const dragRef = useRef<{
-    pointerId: number;
-    clientX: number;
-    clientY: number;
-    pan: GraphPan;
-  } | null>(null);
+  const relatedIds = useMemo(() => {
+    const ids = new Set([selectedId]);
+    for (const edge of demo.edges) {
+      if (edge.source === selectedId) ids.add(edge.target);
+      if (edge.target === selectedId) ids.add(edge.source);
+    }
+    return ids;
+  }, [demo.edges, selectedId]);
+
   const matchesQuery = (feature: CircuitFeature) =>
     !loweredQuery ||
     `${feature.label} ${feature.detail} ${feature.kind} ${feature.layer}`
       .toLowerCase()
       .includes(loweredQuery);
-
-  const selectAdjacent = (
-    event: ReactKeyboardEvent<HTMLButtonElement>,
-    index: number,
-  ) => {
-    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key))
-      return;
-    event.preventDefault();
-    const direction =
-      event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1;
-    const next =
-      (index + direction + demo.features.length) % demo.features.length;
-    onSelect(demo.features[next].id);
-    document
-      .querySelector<HTMLButtonElement>(
-        `[data-graph-feature="${demo.features[next].id}"]`,
-      )
-      ?.focus();
-  };
+  const compactFeatures = [...demo.features].sort((a, b) => {
+    if (view === "river") {
+      return (
+        a.layer - b.layer ||
+        Number(a.kind === "error") - Number(b.kind === "error") ||
+        b.contribution - a.contribution
+      );
+    }
+    const aPoint = positions.get(a.id);
+    const bPoint = positions.get(b.id);
+    return (
+      (aPoint?.x ?? 0) - (bPoint?.x ?? 0) ||
+      (aPoint?.y ?? 0) - (bPoint?.y ?? 0)
+    );
+  });
 
   return (
     <div
@@ -186,52 +150,19 @@ function GraphCanvas({
       role="group"
       aria-label={
         view === "graph"
-          ? "Node-link circuit graph. Drag the background to pan."
-          : "Layer River contribution visualization"
+          ? "Circuit graph. Select a node to inspect its evidence."
+          : "Layer River. Nodes are arranged from input to output by fixture depth."
       }
-      onPointerDown={(event) => {
-        if ((event.target as HTMLElement).closest("button")) return;
-        dragRef.current = {
-          pointerId: event.pointerId,
-          clientX: event.clientX,
-          clientY: event.clientY,
-          pan,
-        };
-        event.currentTarget.setPointerCapture(event.pointerId);
-      }}
-      onPointerMove={(event) => {
-        const drag = dragRef.current;
-        if (!drag || drag.pointerId !== event.pointerId) return;
-        onPan({
-          x: drag.pan.x + event.clientX - drag.clientX,
-          y: drag.pan.y + event.clientY - drag.clientY,
-        });
-      }}
-      onPointerUp={(event) => {
-        if (dragRef.current?.pointerId === event.pointerId) {
-          dragRef.current = null;
-          event.currentTarget.releasePointerCapture(event.pointerId);
-        }
-      }}
-      onPointerCancel={() => {
-        dragRef.current = null;
-      }}
-      onWheel={(event) => {
-        if (!event.ctrlKey && !event.metaKey) return;
-        event.preventDefault();
-        onZoom(Math.max(0.7, Math.min(1.7, zoom - event.deltaY * 0.002)));
-      }}
     >
-      <div
-        className="graph-transform"
-        style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-        }}
-      >
+      <p className="sr-only">
+        {demo.features.length} nodes and {demo.edges.length} directed edges.
+        Positive and negative paths use both labels and different line patterns.
+      </p>
+      <div className="graph-plane">
         <svg viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <marker
-              id="edge-arrow"
+              id="flow-arrow"
               markerWidth="8"
               markerHeight="8"
               refX="7"
@@ -241,45 +172,74 @@ function GraphCanvas({
               <path d="M0,0 L0,6 L8,3 z" />
             </marker>
           </defs>
+
+          {view === "river" &&
+            [...new Set(demo.features.map((feature) => feature.layer))].map(
+              (layer) => {
+                const x = (8 + (layer / 18) * 84) * 10;
+                return (
+                  <g className="layer-guide" key={layer}>
+                    <line x1={x} y1="48" x2={x} y2="485" />
+                    <text x={x} y="29">
+                      L{layer}
+                    </text>
+                  </g>
+                );
+              },
+            )}
+
           {demo.edges.map((edge: CircuitEdge) => {
             const source = featureById.get(edge.source);
             const target = featureById.get(edge.target);
-            if (!source || !target) return null;
-            const sourcePosition = fitGraphPoint(source.x, source.y);
-            const targetPosition = fitGraphPoint(target.x, target.y);
+            const sourcePosition = positions.get(edge.source);
+            const targetPosition = positions.get(edge.target);
+            if (!source || !target || !sourcePosition || !targetPosition)
+              return null;
             const x1 = sourcePosition.x * 10;
             const y1 = sourcePosition.y * 5.2;
             const x2 = targetPosition.x * 10;
             const y2 = targetPosition.y * 5.2;
-            const curve =
-              view === "river"
-                ? `M ${x1} ${y1} C ${x1 + 90} ${y1}, ${x2 - 90} ${y2}, ${x2} ${y2}`
-                : `M ${x1} ${y1} L ${x2} ${y2}`;
+            const bend = Math.max(42, Math.abs(x2 - x1) * 0.38);
+            const connected =
+              edge.source === selectedId || edge.target === selectedId;
+            const changed =
+              changedIds.includes(edge.source) ||
+              changedIds.includes(edge.target);
+            const searched =
+              matchesQuery(source) || matchesQuery(target);
+            const path = `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${
+              x2 - bend
+            } ${y2}, ${x2} ${y2}`;
+
             return (
               <g key={`${edge.source}-${edge.target}`}>
                 <path
-                  d={curve}
+                  d={path}
                   className={[
                     "graph-edge",
                     edge.contribution < 0 ? "negative" : "positive",
                     edge.path === "error" ? "error" : "",
-                    changedIds.includes(edge.target) ? "changed" : "",
-                    loweredQuery &&
-                    !matchesQuery(source) &&
-                    !matchesQuery(target)
-                      ? "search-dimmed"
-                      : "",
+                    connected ? "connected" : "",
+                    changed ? "changed" : "",
+                    loweredQuery && !searched ? "search-dimmed" : "",
                   ]
                     .filter(Boolean)
                     .join(" ")}
                   style={{
-                    strokeWidth: 1.2 + Math.abs(edge.contribution) * 4.2,
+                    strokeWidth: connected
+                      ? 2.2 + Math.abs(edge.contribution) * 3
+                      : 1 + Math.abs(edge.contribution) * 2,
                   }}
-                  markerEnd="url(#edge-arrow)"
+                  markerEnd="url(#flow-arrow)"
                 />
-                {view === "graph" && (
-                  <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 7}>
-                    {edge.path}
+                {connected && (
+                  <text
+                    className="edge-label"
+                    x={(x1 + x2) / 2}
+                    y={(y1 + y2) / 2 - 9}
+                  >
+                    {edge.path} · {edge.contribution > 0 ? "+" : ""}
+                    {edge.contribution.toFixed(2)}
                   </text>
                 )}
               </g>
@@ -287,18 +247,20 @@ function GraphCanvas({
           })}
         </svg>
 
-        {demo.features.map((feature: CircuitFeature, index) => {
+        {demo.features.map((feature: CircuitFeature) => {
+          const position = positions.get(feature.id);
+          if (!position) return null;
           const selected = feature.id === selectedId;
           const matched = matchesQuery(feature);
-          const position = fitGraphPoint(feature.x, feature.y);
           return (
             <button
               type="button"
               key={feature.id}
               className={[
-                "ide-node",
+                "trace-node",
                 `kind-${feature.kind}`,
                 selected ? "selected" : "",
+                relatedIds.has(feature.id) ? "related" : "",
                 changedIds.includes(feature.id) ? "changed" : "",
                 !matched ? "search-dimmed" : "",
               ]
@@ -306,20 +268,20 @@ function GraphCanvas({
                 .join(" ")}
               style={{ left: `${position.x}%`, top: `${position.y}%` }}
               onClick={() => onSelect(feature.id)}
-              onKeyDown={(event) => selectAdjacent(event, index)}
               aria-pressed={selected}
-              aria-label={`${feature.label}, ${feature.kind}, layer ${feature.layer}, contribution ${feature.contribution.toFixed(2)}`}
-              data-graph-feature={feature.id}
+              aria-label={`${feature.label}, ${feature.kind}, layer ${feature.layer}, attribution ${feature.contribution.toFixed(2)}`}
               data-testid={
                 view === "river"
                   ? `node-${feature.id}`
                   : `graph-node-${feature.id}`
               }
             >
-              <span>{feature.kind.toUpperCase()}</span>
+              <span>
+                L{feature.layer} / {feature.kind}
+              </span>
               <strong>{feature.label}</strong>
               <small>
-                L{feature.layer} · {feature.contribution > 0 ? "+" : ""}
+                {feature.contribution > 0 ? "+" : ""}
                 {feature.contribution.toFixed(2)}
               </small>
             </button>
@@ -329,58 +291,54 @@ function GraphCanvas({
         {firstLayer !== null && (
           <div
             className="divergence-marker"
-            style={{ left: `${Math.max(8, (firstLayer / 18) * 88)}%` }}
+            style={{ left: `${8 + (firstLayer / 18) * 84}%` }}
             data-testid="divergence-marker"
           >
-            <span>FIRST STORED CHANGE</span>
-            <strong>L{firstLayer}</strong>
+            <span>First stored change · L{firstLayer}</span>
           </div>
         )}
       </div>
-
-      <div className="graph-minimap" aria-label="Circuit minimap">
-        <span>MINIMAP</span>
-        <svg viewBox="0 0 100 62" aria-hidden="true">
-          {demo.edges.map((item) => {
-            const source = featureById.get(item.source);
-            const target = featureById.get(item.target);
-            if (!source || !target) return null;
-            const sourcePosition = fitGraphPoint(source.x, source.y);
-            const targetPosition = fitGraphPoint(target.x, target.y);
-            return (
-              <line
-                key={`${item.source}-${item.target}`}
-                x1={sourcePosition.x}
-                y1={sourcePosition.y * 0.62}
-                x2={targetPosition.x}
-                y2={targetPosition.y * 0.62}
-              />
-            );
-          })}
-          {demo.features.map((feature) => {
-            const position = fitGraphPoint(feature.x, feature.y);
-            return (
-              <circle
-                key={feature.id}
-                cx={position.x}
-                cy={position.y * 0.62}
-                r={feature.id === selectedId ? 2.4 : 1.3}
-              />
-            );
-          })}
-          <rect
-            x={8 + (1 - zoom) * 10 - pan.x / 25}
-            y={6 - pan.y / 25}
-            width={Math.max(44, 80 / zoom)}
-            height={48}
-          />
-        </svg>
+      <div
+        className="mobile-trace-overview"
+        role="group"
+        aria-label={`Compact ${view} overview`}
+      >
+        <header>
+          <strong>
+            {view === "graph" ? "Topology overview" : "Layer overview"}
+          </strong>
+          <span>Use Table to select a component</span>
+        </header>
+        <ol aria-label={`Compact ${view} nodes`}>
+          {compactFeatures.map((feature) => (
+            <li
+              key={feature.id}
+              className={[
+                feature.id === selectedId ? "selected" : "",
+                changedIds.includes(feature.id) ? "changed" : "",
+                !matchesQuery(feature) ? "search-dimmed" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              aria-current={feature.id === selectedId ? "true" : undefined}
+            >
+              <span>
+                L{feature.layer} · {feature.kind}
+              </span>
+              <strong>{feature.label}</strong>
+              <small>
+                {feature.contribution > 0 ? "+" : ""}
+                {feature.contribution.toFixed(2)}
+              </small>
+            </li>
+          ))}
+        </ol>
       </div>
     </div>
   );
 }
 
-function AccessibleGraphTreegrid({
+function AccessibleNodeTable({
   demo,
   selected,
   onSelect,
@@ -397,15 +355,16 @@ function AccessibleGraphTreegrid({
       .toLowerCase()
       .includes(loweredQuery),
   );
+
   return (
-    <div className="treegrid-wrap">
+    <div className="node-table-wrap">
       <table aria-label="Accessible circuit node table">
         <thead>
           <tr>
             <th scope="col">Layer</th>
-            <th scope="col">Type</th>
-            <th scope="col">Feature</th>
-            <th scope="col">Contribution</th>
+            <th scope="col">Component</th>
+            <th scope="col">Interpretation</th>
+            <th scope="col">Attribution</th>
             <th scope="col">Activation</th>
           </tr>
         </thead>
@@ -422,13 +381,16 @@ function AccessibleGraphTreegrid({
                   {feature.label}
                 </button>
               </td>
-              <td>{feature.contribution.toFixed(2)}</td>
+              <td>
+                {feature.contribution > 0 ? "+" : ""}
+                {feature.contribution.toFixed(2)}
+              </td>
               <td>{feature.activationSigma.toFixed(2)}σ</td>
             </tr>
           ))}
           {visibleFeatures.length === 0 && (
             <tr>
-              <td colSpan={5}>No circuit nodes match “{query}”.</td>
+              <td colSpan={5}>No nodes match “{query}”.</td>
             </tr>
           )}
         </tbody>
@@ -437,7 +399,7 @@ function AccessibleGraphTreegrid({
   );
 }
 
-function FeatureInspector({
+function FeatureEvidence({
   feature,
   manifestId,
 }: {
@@ -445,36 +407,34 @@ function FeatureInspector({
   manifestId: string;
 }) {
   return (
-    <aside className="feature-inspector" aria-label="Feature inspector">
-      <header>
-        <span>INSPECTOR</span>
-        <small>{feature.id}</small>
-      </header>
-      <section className="feature-title">
-        <span data-kind={feature.kind}>{feature.kind}</span>
-        <h2>{feature.label}</h2>
+    <aside className="feature-evidence" aria-label="Selected node evidence">
+      <p className="section-kicker">Selected component</p>
+      <div className="feature-heading">
+        <span>{feature.kind}</span>
+        <h3>{feature.label}</h3>
         <p>{feature.detail}</p>
-      </section>
+      </div>
       <dl>
         <div>
-          <dt>Layer</dt>
-          <dd>{feature.layer} / 18</dd>
+          <dt>Fixture depth</dt>
+          <dd>
+            L{feature.layer} <small>of L18</small>
+          </dd>
         </div>
         <div>
           <dt>Attribution</dt>
-          <dd>{feature.contribution.toFixed(3)}</dd>
+          <dd>
+            {feature.contribution > 0 ? "+" : ""}
+            {feature.contribution.toFixed(3)}
+          </dd>
         </div>
         <div>
           <dt>Activation</dt>
           <dd>{feature.activationSigma.toFixed(2)}σ</dd>
         </div>
-        <div>
-          <dt>Artifact</dt>
-          <dd>{manifestId}</dd>
-        </div>
       </dl>
-      <section className="feature-examples">
-        <h3>STORED ACTIVATION EXAMPLES</h3>
+      <div className="stored-examples">
+        <h4>Stored activation examples</h4>
         {feature.examples?.length ? (
           <ul>
             {feature.examples.map((example) => (
@@ -484,136 +444,281 @@ function FeatureInspector({
         ) : (
           <p>No token examples are stored for this fixture node.</p>
         )}
-      </section>
+      </div>
+      <p className="artifact-reference">
+        Artifact <strong>{manifestId}</strong>
+      </p>
     </aside>
   );
 }
 
-function BottomPanel({
-  demo,
-  selected,
-  mode,
-  setMode,
-  activeTab,
-  setActiveTab,
-  branched,
-  setBranched,
+function StepHeading({
+  number,
+  title,
+  description,
 }: {
-  demo: Demo;
-  selected: CircuitFeature;
-  mode: InterventionMode;
-  setMode: (mode: InterventionMode) => void;
-  activeTab: BottomTab;
-  setActiveTab: (tab: BottomTab) => void;
-  branched: boolean;
-  setBranched: (value: boolean) => void;
+  number: string;
+  title: string;
+  description: string;
 }) {
+  return (
+    <header className="step-heading">
+      <span>{number}</span>
+      <div>
+        <p>Research step</p>
+        <h2>{title}</h2>
+      </div>
+      <p>{description}</p>
+    </header>
+  );
+}
+
+export function BranchTraceApp() {
+  const [demoId, setDemoId] = useState(demos[0].id);
+  const [selectedFeature, setSelectedFeature] = useState(demos[0].focusFeature);
+  const [mode, setMode] = useState<InterventionMode>("suppress");
+  const [branched, setBranched] = useState(false);
+  const [view, setView] = useState<TraceView>("graph");
+  const [query, setQuery] = useState("");
+
+  const demo = useMemo(
+    () => demos.find((item) => item.id === demoId) ?? demos[0],
+    [demoId],
+  );
+  const selected =
+    demo.features.find((feature) => feature.id === selectedFeature) ??
+    demo.features.find((feature) => feature.id === demo.focusFeature) ??
+    demo.features[0];
   const outcome = useMemo(
     () => runFixtureIntervention(demo, selected, mode),
     [demo, mode, selected],
   );
   const validationMetrics = [
-    {
-      label: "Attributed effect",
-      value: outcome.predictedLogitDelta,
-    },
-    {
-      label: "Stored intervention",
-      value: outcome.observedLogitDelta,
-    },
-    {
-      label: "Unexplained residual",
-      value: outcome.unexplainedResidual,
-    },
+    { label: "Attributed effect", value: outcome.predictedLogitDelta },
+    { label: "Stored intervention", value: outcome.observedLogitDelta },
+    { label: "Unexplained residual", value: outcome.unexplainedResidual },
   ];
   const validationMaximum = Math.max(
     0.01,
     ...validationMetrics.map((metric) => Math.abs(metric.value)),
   );
 
+  function openDemo(next: Demo) {
+    setDemoId(next.id);
+    setSelectedFeature(next.focusFeature);
+    setMode("suppress");
+    setBranched(false);
+    setQuery("");
+    setView("graph");
+  }
+
+  function selectFeature(id: string) {
+    setSelectedFeature(id);
+    setBranched(false);
+  }
+
   return (
-    <section className="bottom-panel" aria-label="Analysis panel">
-      <header>
-        <div role="tablist" aria-label="Analysis views">
-          {(["intervention", "validation", "provenance"] as BottomTab[]).map(
-            (tab) => (
-              <button
-                type="button"
-                role="tab"
-                key={tab}
-                aria-selected={activeTab === tab}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-                {tab === "validation" && branched ? <i /> : null}
-              </button>
-            ),
-          )}
+    <main className="branchtrace-shell">
+      <header className="masthead">
+        <a className="brand" href="#top" aria-label="BranchTrace home">
+          <span aria-hidden="true">BT</span>
+          <strong>BranchTrace</strong>
+        </a>
+        <p>
+          Circuit hypotheses,
+          <br />
+          tested by intervention.
+        </p>
+        <div className="masthead-actions">
+          <span>Authored fixtures · no model running</span>
+          <ThemeToggle />
         </div>
-        <span>
-          {demo.manifest.evidenceClass.replaceAll("-", " ").toUpperCase()}
-        </span>
       </header>
 
-      {activeTab === "intervention" && (
-        <div className="intervention-workbench">
-          <section>
-            <label>
-              CLEAN PROMPT
-              <textarea readOnly value={demo.prompt} />
-            </label>
-            <label>
-              ALIGNED CONTRAST
-              <textarea readOnly value={demo.contrastPrompt} />
-            </label>
+      <div id="top" />
+      <StudyIndex active={demo} onOpen={openDemo} />
+
+      <header className="study-lede">
+        <div>
+          <p>{demo.eyebrow}</p>
+          <h1>{demo.title}</h1>
+        </div>
+        <blockquote>
+          <span>Prompt</span>
+          <p>{demo.prompt}</p>
+        </blockquote>
+        <div className="completion">
+          <span>Stored completion</span>
+          <strong>{demo.answer}</strong>
+          <small>{demo.model}</small>
+        </div>
+      </header>
+
+      <nav className="story-rail" aria-label="Study workflow">
+        <a href="#trace">
+          <span>01</span> Trace
+        </a>
+        <i aria-hidden="true" />
+        <a href="#intervene">
+          <span>02</span> Intervene
+        </a>
+        <i aria-hidden="true" />
+        <a href="#validate">
+          <span>03</span> Validate
+        </a>
+      </nav>
+
+      <section className="notebook-step" id="trace">
+        <StepHeading
+          number="01"
+          title="Trace the candidate circuit"
+          description="Read the topology, then select a component. Width encodes the magnitude of its authored fixture contribution; dashed paths are negative or unexplained flow."
+        />
+
+        <div className="trace-toolbar">
+          <label>
+            <span>Find a component</span>
+            <input
+              id="feature-search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Name, kind, or layer"
+              aria-label="Search circuit features"
+            />
+          </label>
+          <div className="view-switcher" role="group" aria-label="Trace view">
+            {(
+              [
+                ["graph", "Graph"],
+                ["river", "River"],
+                ["table", "Table"],
+              ] as Array<[TraceView, string]>
+            ).map(([id, label]) => (
+              <button
+                type="button"
+                key={id}
+                className={view === id ? "active" : ""}
+                aria-pressed={view === id}
+                onClick={() => setView(id)}
+                data-testid={`view-${id}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="trace-legend" aria-label="Path legend">
+            <span>
+              <i className="positive" /> Positive
+            </span>
+            <span>
+              <i className="negative" /> Negative / residual
+            </span>
+            <span>
+              <i className="branch" /> Changed after branch
+            </span>
+          </div>
+        </div>
+
+        <div className="trace-workspace">
+          <section className="trace-visual" aria-label="Circuit trace">
+            {view === "table" ? (
+              <AccessibleNodeTable
+                demo={demo}
+                selected={selected.id}
+                query={query}
+                onSelect={selectFeature}
+              />
+            ) : (
+              <GraphCanvas
+                demo={demo}
+                selectedId={selected.id}
+                onSelect={selectFeature}
+                view={view}
+                changedIds={branched ? outcome.changedNodeIds : []}
+                firstLayer={branched ? outcome.firstLayer : null}
+                query={query}
+              />
+            )}
           </section>
-          <section className="intervention-settings">
-            <label>
-              SELECTED NODE
-              <input readOnly value={`${selected.label} · L${selected.layer}`} />
-            </label>
-            <div className="mode-control" role="group" aria-label="Intervention type">
+          <FeatureEvidence
+            feature={selected}
+            manifestId={demo.manifest.artifactId}
+          />
+        </div>
+      </section>
+
+      <section className="notebook-step" id="intervene">
+        <StepHeading
+          number="02"
+          title="Make one causal change"
+          description="Choose an operation on the selected component and replay its stored counterfactual. This tests one fixture hypothesis; it does not expose a private reasoning trace."
+        />
+
+        <div className="intervention-layout">
+          <section className="prompt-pair" aria-label="Intervention prompts">
+            <div>
+              <span>Clean prompt</span>
+              <p>{demo.prompt}</p>
+            </div>
+            <div>
+              <span>Aligned contrast</span>
+              <p>{demo.contrastPrompt}</p>
+            </div>
+          </section>
+
+          <section className="branch-controls" aria-label="Branch controls">
+            <p>
+              Target <strong>{selected.label}</strong> at L{selected.layer}
+            </p>
+            <fieldset>
+              <legend>Intervention</legend>
               {(["suppress", "amplify", "patch"] as InterventionMode[]).map(
                 (item) => (
-                  <button
-                    type="button"
-                    key={item}
-                    className={mode === item ? "active" : ""}
-                    aria-pressed={mode === item}
-                    onClick={() => {
-                      setMode(item);
-                      setBranched(false);
-                    }}
-                    data-testid={`mode-${item}`}
-                  >
-                    {interventionCopy[item].verb}
-                  </button>
+                  <label key={item}>
+                    <input
+                      type="radio"
+                      name="intervention-mode"
+                      value={item}
+                      checked={mode === item}
+                      onChange={() => {
+                        setMode(item);
+                        setBranched(false);
+                      }}
+                      data-testid={`mode-${item}`}
+                    />
+                    <span>
+                      <strong>{interventionCopy[item].verb}</strong>
+                      <small>{interventionCopy[item].note}</small>
+                    </span>
+                  </label>
                 ),
               )}
-            </div>
-            <p>{interventionCopy[mode].note}</p>
+            </fieldset>
             <button
               type="button"
-              className="run-intervention"
+              className="run-branch"
               onClick={() => setBranched(true)}
               data-testid="run-intervention"
             >
-              ▶ Run branched execution
+              Run stored branch
+              <span aria-hidden="true">→</span>
             </button>
           </section>
+
           <section
-            className={`measurement-result ${branched ? "ready" : ""}`}
+            className={`branch-result ${branched ? "ready" : ""}`}
             data-testid="branch-result"
+            aria-live="polite"
           >
             {branched ? (
               <>
-                <div className="result-heading">
-                  <span>STORED RESULT</span>
+                <div className="result-callout">
+                  <span>Stored branch output</span>
                   <strong>{outcome.answer}</strong>
                   <small>
                     {outcome.answerChanged
-                      ? "OUTPUT CHANGED"
-                      : "OUTPUT PRESERVED"}
+                      ? "Output changed"
+                      : "Output preserved"}
                   </small>
                 </div>
                 <dl>
@@ -630,14 +735,6 @@ function BottomPanel({
                     <dd>{outcome.observedLogitDelta.toFixed(2)}</dd>
                   </div>
                   <div>
-                    <dt>Attributed Δ</dt>
-                    <dd>{outcome.predictedLogitDelta.toFixed(2)}</dd>
-                  </div>
-                  <div>
-                    <dt>Residual</dt>
-                    <dd>{outcome.unexplainedResidual.toFixed(2)}</dd>
-                  </div>
-                  <div>
                     <dt>First stored change</dt>
                     <dd>
                       {outcome.firstLayer === null
@@ -646,7 +743,10 @@ function BottomPanel({
                     </dd>
                   </div>
                 </dl>
-                <div className="changed-components" data-testid="changed-components">
+                <div
+                  className="changed-components"
+                  data-testid="changed-components"
+                >
                   <span>Downstream changes</span>
                   <strong>
                     {outcome.changedNodeIds.length
@@ -658,50 +758,82 @@ function BottomPanel({
                           )
                           .filter(Boolean)
                           .join(" → ")
-                      : "No nodes crossed threshold"}
+                      : "No nodes crossed the stored threshold"}
                   </strong>
                 </div>
+                <button
+                  type="button"
+                  className="reset-branch"
+                  onClick={() => setBranched(false)}
+                >
+                  Reset branch
+                </button>
               </>
             ) : (
-              <div className="empty-result">
-                <span aria-hidden="true">⑂</span>
-                <p>Run an intervention to materialize this branch</p>
+              <div className="awaiting-result">
+                <span>Awaiting intervention</span>
+                <p>
+                  The result, changed path, and first stored divergence will
+                  appear here.
+                </p>
               </div>
             )}
           </section>
         </div>
-      )}
+      </section>
 
-      {activeTab === "validation" && (
-        <div className="validation-panel">
-          <section>
-            <span>VALIDATION CONTRACT</span>
-            <h2>Attribution is a hypothesis until intervened on.</h2>
+      <section className="notebook-step" id="validate">
+        <StepHeading
+          number="03"
+          title="Compare attribution with outcome"
+          description="A useful circuit hypothesis should survive intervention. The residual makes disagreement visible instead of turning an attribution score into confidence."
+        />
+
+        <div className={`validation-layout ${branched ? "ready" : ""}`}>
+          <section className="validation-summary">
+            <p className="section-kicker">Validation contract</p>
+            <h3>
+              {branched
+                ? outcome.answerChanged
+                  ? "The stored branch changes the output."
+                  : "The stored branch preserves the output."
+                : "Run the branch before interpreting the trace."}
+            </h3>
             <p>
-              For {selected.label}, the {mode} branch compares its stored
-              attributed logit delta with the selected fixture&apos;s stored
-              intervention delta and reports the unexplained residual. These
-              authored values validate software behavior only.
+              For <strong>{selected.label}</strong>, the {mode} branch compares
+              an authored attribution delta with an authored intervention delta.
+              These values validate product behavior only.
             </p>
+            {!branched && <a href="#intervene">Return to intervention ↑</a>}
           </section>
-          <section className="validation-bars">
+
+          <section className="validation-bars" aria-label="Validation values">
             {validationMetrics.map((metric) => (
               <div key={metric.label}>
-                <label>{metric.label}</label>
-                <i
-                  style={{
-                    width: `${validationBarPercent(
-                      metric.value,
-                      validationMaximum,
-                    )}%`,
-                  }}
-                />
-                <strong>{metric.value.toFixed(2)}</strong>
+                <span>{metric.label}</span>
+                <i>
+                  <b
+                    style={{
+                      width: `${
+                        branched
+                          ? validationBarPercent(
+                              metric.value,
+                              validationMaximum,
+                            )
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </i>
+                <strong>{branched ? metric.value.toFixed(2) : "—"}</strong>
               </div>
             ))}
           </section>
-          <section className="version-diff">
-            <span>MODEL VERSION DIFF · STORED FIXTURE CONTRAST</span>
+
+          <section className="version-contrast">
+            <p className="section-kicker">
+              Stored fixture contrast · not a live benchmark
+            </p>
             <dl>
               <div>
                 <dt>Baseline component</dt>
@@ -729,551 +861,57 @@ function BottomPanel({
             <p>{demo.versionDiff.interpretation}</p>
           </section>
         </div>
-      )}
 
-      {activeTab === "provenance" && (
-        <div className="provenance-panel" id="provenance">
-          <dl>
-            <div>
-              <dt>Artifact</dt>
-              <dd>{demo.manifest.artifactId}</dd>
-            </div>
-            <div>
-              <dt>Schema</dt>
-              <dd>{demo.manifest.schemaVersion}</dd>
-            </div>
-            <div>
-              <dt>Evidence</dt>
-              <dd>{demo.manifest.evidenceClass}</dd>
-            </div>
-            <div>
-              <dt>Model target</dt>
-              <dd>{demo.manifest.modelTarget}</dd>
-            </div>
-            <div>
-              <dt>Revision</dt>
-              <dd>{demo.manifest.modelRevision}</dd>
-            </div>
-            <div>
-              <dt>Transcoder target</dt>
-              <dd>{demo.manifest.transcoderTarget}</dd>
-            </div>
-            <div>
-              <dt>Generator</dt>
-              <dd>{demo.manifest.generator}</dd>
-            </div>
-            <div>
-              <dt>Generated</dt>
-              <dd>{demo.manifest.generatedAt}</dd>
-            </div>
-            <div>
-              <dt>Prompt hash</dt>
-              <dd>{demo.manifest.promptHash}</dd>
-            </div>
-            <div>
-              <dt>Artifact hash</dt>
-              <dd>{demo.manifest.artifactHash}</dd>
-            </div>
-            <div>
-              <dt>License</dt>
-              <dd>{demo.manifest.license}</dd>
-            </div>
-          </dl>
-          <p>{demo.manifest.caveat}</p>
-          <a href={demo.manifest.sourceUrl} target="_blank" rel="noreferrer">
-            {demo.manifest.sourceTitle} ↗
-          </a>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function CommandPalette({
-  onClose,
-  onCommand,
-}: {
-  onClose: () => void;
-  onCommand: (command: string) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
-  const commands: Array<[string, string, string]> = [
-    ["fit", "Graph: Fit to viewport", "F"],
-    ["table", "View: Toggle accessible node table", "T"],
-    ["provenance", "Panel: Open provenance", "P"],
-    ["theme", "Preferences: Toggle color theme", "—"],
-  ];
-  const filtered = commands.filter(([, label]) =>
-    label.toLowerCase().includes(query.toLowerCase()),
-  );
-
-  useEffect(() => inputRef.current?.focus(), []);
-
-  return (
-    <div
-      className="command-backdrop"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.currentTarget === event.target) onClose();
-      }}
-    >
-      <section
-        className="command-palette"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Command palette"
-      >
-        <input
-          ref={inputRef}
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setActiveIndex(0);
-          }}
-          placeholder="Type a command"
-          aria-label="Command search"
-          aria-controls="command-results"
-          aria-activedescendant={
-            filtered[activeIndex]
-              ? `command-option-${filtered[activeIndex][0]}`
-              : undefined
-          }
-          onKeyDown={(event) => {
-            if (event.key === "Escape") onClose();
-            if (event.key === "ArrowDown") {
-              event.preventDefault();
-              setActiveIndex((current) =>
-                filtered.length ? (current + 1) % filtered.length : 0,
-              );
-            }
-            if (event.key === "ArrowUp") {
-              event.preventDefault();
-              setActiveIndex((current) =>
-                filtered.length
-                  ? (current - 1 + filtered.length) % filtered.length
-                  : 0,
-              );
-            }
-            if (event.key === "Enter" && filtered[activeIndex]) {
-              onCommand(filtered[activeIndex][0]);
-              onClose();
-            }
-          }}
-        />
-        <ul id="command-results" role="listbox">
-          {filtered.map(([id, label, key], index) => (
-            <li key={id} role="option" aria-selected={index === activeIndex}>
-              <button
-                type="button"
-                id={`command-option-${id}`}
-                className={index === activeIndex ? "selected" : ""}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => {
-                  onCommand(id);
-                  onClose();
-                }}
-              >
-                <span>{label}</span>
-                <kbd>{key}</kbd>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
-  );
-}
-
-export function BranchTraceApp() {
-  const [demoId, setDemoId] = useState(demos[0].id);
-  const [openTabs, setOpenTabs] = useState<string[]>([demos[0].id]);
-  const [selectedFeature, setSelectedFeature] = useState(demos[0].focusFeature);
-  const [mode, setMode] = useState<InterventionMode>("suppress");
-  const [branched, setBranched] = useState(false);
-  const [view, setView] = useState<CircuitView>("graph");
-  const [bottomTab, setBottomTab] = useState<BottomTab>("intervention");
-  const [query, setQuery] = useState("");
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState<GraphPan>({ x: 0, y: 0 });
-  const [showTable, setShowTable] = useState(false);
-  const [showPalette, setShowPalette] = useState(false);
-  const [showExplorer, setShowExplorer] = useState(true);
-  const paletteReturnFocusRef = useRef<HTMLElement | null>(null);
-
-  const demo = useMemo(
-    () => demos.find((item) => item.id === demoId) ?? demos[0],
-    [demoId],
-  );
-  const selected =
-    demo.features.find((feature) => feature.id === selectedFeature) ??
-    demo.features.find((feature) => feature.id === demo.focusFeature) ??
-    demo.features[0];
-  const outcome = useMemo(
-    () => runFixtureIntervention(demo, selected, mode),
-    [demo, mode, selected],
-  );
-
-  const openDemo = (next: Demo) => {
-    setDemoId(next.id);
-    setOpenTabs((current) =>
-      current.includes(next.id) ? current : [...current, next.id],
-    );
-    setSelectedFeature(next.focusFeature);
-    setMode("suppress");
-    setBranched(false);
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-  };
-
-  const closeTab = (id: string) => {
-    if (openTabs.length === 1) return;
-    const nextTabs = openTabs.filter((item) => item !== id);
-    setOpenTabs(nextTabs);
-    if (demoId === id) openDemo(demos.find((item) => item.id === nextTabs.at(-1)) ?? demos[0]);
-  };
-
-  const runCommand = (command: string) => {
-    if (command === "fit") {
-      setZoom(1);
-      setPan({ x: 0, y: 0 });
-    }
-    if (command === "table") setShowTable((current) => !current);
-    if (command === "provenance") setBottomTab("provenance");
-    if (command === "theme") {
-      document
-        .querySelector<HTMLButtonElement>('[data-testid="theme-toggle"]')
-        ?.click();
-    }
-  };
-
-  const openPalette = () => {
-    paletteReturnFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    setShowPalette(true);
-  };
-
-  const closePalette = () => {
-    setShowPalette(false);
-    window.setTimeout(() => paletteReturnFocusRef.current?.focus(), 0);
-  };
-
-  useEffect(() => {
-    const handleKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        paletteReturnFocusRef.current =
-          document.activeElement instanceof HTMLElement
-            ? document.activeElement
-            : null;
-        setShowPalette(true);
-      } else if (
-        event.key.toLowerCase() === "f" &&
-        !(event.target instanceof HTMLInputElement) &&
-        !(event.target instanceof HTMLTextAreaElement)
-      ) {
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-      } else if (event.key === "Escape") {
-        setShowPalette(false);
-        setQuery("");
-      }
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, []);
-
-  return (
-    <main
-      className={`ide-shell ${showExplorer ? "" : "explorer-collapsed"}`}
-      id="explorer"
-    >
-      <header className="ide-titlebar">
-        <div className="ide-brand">
-          <span aria-hidden="true">⑂</span>
-          <strong>BranchTrace</strong>
-          <small>Mechanistic Debugger IDE</small>
-        </div>
-        <button
-          type="button"
-          className="command-trigger"
-          onClick={openPalette}
-          aria-label="Open command palette"
-        >
-          <span>Search files, features, layers, commands…</span>
-          <kbd>⌘ K</kbd>
-        </button>
-        <div className="title-actions">
-          <span className="fixture-state">
-            <i /> FIXTURE · NO MODEL RUNNING
-          </span>
-          <ThemeToggle />
-          <a
-            href="#provenance"
-            onClick={() => setBottomTab("provenance")}
-          >
-            API schema
-          </a>
-        </div>
-      </header>
-
-      <nav className="activity-bar" aria-label="Workbench views">
-        <button
-          type="button"
-          className={showExplorer ? "active" : ""}
-          aria-label="Toggle run explorer"
-          aria-pressed={showExplorer}
-          onClick={() => setShowExplorer((current) => !current)}
-        >
-          ⧉
-        </button>
-        <button
-          type="button"
-          aria-label="Search features"
-          onClick={() =>
-            document.querySelector<HTMLInputElement>("#feature-search")?.focus()
-          }
-        >
-          ⌕
-        </button>
-        <button
-          type="button"
-          aria-label="Open intervention panel"
-          onClick={() => setBottomTab("intervention")}
-        >
-          ⑂
-        </button>
-        <button
-          type="button"
-          aria-label="Open validation panel"
-          onClick={() => setBottomTab("validation")}
-        >
-          ✓
-        </button>
-        <button
-          type="button"
-          aria-label="Open provenance panel"
-          onClick={() => setBottomTab("provenance")}
-        >
-          ⓘ
-        </button>
-      </nav>
-
-      {showExplorer && <RunExplorer active={demo} onOpen={openDemo} />}
-
-      <section className="editor-area">
-        <nav
-          className="editor-tabs"
-          role="tablist"
-          aria-label="Open circuit artifacts"
-        >
-          {openTabs.map((id, index) => {
-            const item = demos.find((candidate) => candidate.id === id)!;
-            return (
-              <div
-                key={id}
-                className={id === demo.id ? "active" : ""}
-                role="presentation"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={id === demo.id}
-                  onClick={() => openDemo(item)}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === "ArrowLeft" ||
-                      event.key === "ArrowRight"
-                    ) {
-                      event.preventDefault();
-                      const direction = event.key === "ArrowRight" ? 1 : -1;
-                      const nextIndex =
-                        (index + direction + openTabs.length) % openTabs.length;
-                      const nextId = openTabs[nextIndex];
-                      const nextDemo = demos.find(
-                        (candidate) => candidate.id === nextId,
-                      );
-                      if (nextDemo) openDemo(nextDemo);
-                      document
-                        .querySelectorAll<HTMLButtonElement>(
-                          ".editor-tabs [role='tab']",
-                        )
-                        .item(nextIndex)
-                        ?.focus();
-                    }
-                    if (
-                      (event.key === "Delete" ||
-                        event.key === "Backspace") &&
-                      openTabs.length > 1
-                    ) {
-                      event.preventDefault();
-                      closeTab(id);
-                    }
-                  }}
-                >
-                  <i data-kind={item.task} />
-                  {item.title}
-                  <small>graph.json</small>
-                </button>
-                {openTabs.length > 1 && (
-                  <button
-                    type="button"
-                    className="close-tab"
-                    aria-label={`Close ${item.title}`}
-                    onClick={() => closeTab(id)}
-                  >
-                    ×
-                  </button>
-                )}
+        <details className="provenance" id="provenance">
+          <summary>Inspect artifact provenance and limitations</summary>
+          <div>
+            <dl>
+              <div>
+                <dt>Artifact</dt>
+                <dd>{demo.manifest.artifactId}</dd>
               </div>
-            );
-          })}
-        </nav>
-
-        <header className="editor-toolbar">
-          <div className="breadcrumb">
-            <span>artifacts</span> / <span>{demo.manifest.artifactId}</span> /{" "}
-            <strong>graph.json</strong>
-          </div>
-          <div className="graph-tools">
-            <label>
-              <span className="sr-only">Search circuit features</span>
-              <input
-                id="feature-search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Filter features"
-              />
-            </label>
-            <div role="tablist" aria-label="Circuit visualization">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={view === "river"}
-                onClick={() => setView("river")}
-                data-testid="view-river"
+              <div>
+                <dt>Schema</dt>
+                <dd>{demo.manifest.schemaVersion}</dd>
+              </div>
+              <div>
+                <dt>Evidence</dt>
+                <dd>{demo.manifest.evidenceClass}</dd>
+              </div>
+              <div>
+                <dt>Model target</dt>
+                <dd>{demo.manifest.modelTarget}</dd>
+              </div>
+              <div>
+                <dt>Prompt hash</dt>
+                <dd>{demo.manifest.promptHash}</dd>
+              </div>
+              <div>
+                <dt>Artifact hash</dt>
+                <dd>{demo.manifest.artifactHash}</dd>
+              </div>
+            </dl>
+            <section>
+              <p>{demo.manifest.caveat}</p>
+              <a
+                href={demo.manifest.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
               >
-                River
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={view === "graph"}
-                onClick={() => setView("graph")}
-                data-testid="view-graph"
-              >
-                Graph
-              </button>
-            </div>
-            <button
-              type="button"
-              aria-label="Zoom out graph"
-              onClick={() => setZoom((value) => Math.max(0.7, value - 0.1))}
-            >
-              −
-            </button>
-            <span>{Math.round(zoom * 100)}%</span>
-            <button
-              type="button"
-              aria-label="Zoom in graph"
-              onClick={() => setZoom((value) => Math.min(1.7, value + 0.1))}
-            >
-              +
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setZoom(1);
-                setPan({ x: 0, y: 0 });
-              }}
-            >
-              Fit
-            </button>
-            <button
-              type="button"
-              aria-pressed={showTable}
-              onClick={() => setShowTable((current) => !current)}
-            >
-              {showTable ? "Graph view" : "Node table"}
-            </button>
+                Read the public circuit-tracer source ↗
+              </a>
+            </section>
           </div>
-        </header>
-
-        <div className="prompt-strip">
-          <span>INPUT</span>
-          <code>{demo.prompt}</code>
-          <span>MODEL COMPLETION</span>
-          <strong>{demo.answer}</strong>
-          <small>{demo.model}</small>
-        </div>
-
-        <section className="graph-editor">
-          {showTable ? (
-            <AccessibleGraphTreegrid
-              demo={demo}
-              selected={selected.id}
-              query={query}
-              onSelect={(id) => {
-                setSelectedFeature(id);
-                setBranched(false);
-              }}
-            />
-          ) : (
-            <GraphCanvas
-              demo={demo}
-              selectedId={selected.id}
-              onSelect={(id) => {
-                setSelectedFeature(id);
-                setBranched(false);
-              }}
-              view={view}
-              changedIds={branched ? outcome.changedNodeIds : []}
-              firstLayer={branched ? outcome.firstLayer : null}
-              query={query}
-              zoom={zoom}
-              onZoom={setZoom}
-              pan={pan}
-              onPan={setPan}
-            />
-          )}
-        </section>
+        </details>
       </section>
 
-      <FeatureInspector
-        feature={selected}
-        manifestId={demo.manifest.artifactId}
-      />
-
-      <BottomPanel
-        demo={demo}
-        selected={selected}
-        mode={mode}
-        setMode={setMode}
-        activeTab={bottomTab}
-        setActiveTab={setBottomTab}
-        branched={branched}
-        setBranched={setBranched}
-      />
-
-      <footer className="status-bar">
-        <span>⑂ main*</span>
-        <span>{`${demo.features.length}-node subgraph`}</span>
-        <span>{`${demo.edges.length} edges`}</span>
-        <span>pruning threshold 0.10</span>
-        <span className="status-spacer" />
-        <span>MODEL VERSION DIFF: fixture contrast available</span>
-        <span>{demo.manifest.schemaVersion}</span>
+      <footer className="page-footer">
+        <strong>BranchTrace</strong>
+        <p>
+          Deterministic-fixture interface for testing circuit-analysis software.
+        </p>
+        <a href="#top">Back to top ↑</a>
       </footer>
-
-      {showPalette && (
-        <CommandPalette
-          onClose={closePalette}
-          onCommand={runCommand}
-        />
-      )}
     </main>
   );
 }
