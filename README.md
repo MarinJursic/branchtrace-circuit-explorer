@@ -41,13 +41,14 @@ checkpoint was downloaded or executed. Every surface shows
 
 ## Continuous app walkthrough
 
-[![Continuous BranchTrace walkthrough showing Circuit Graph and Layer River views, intervention comparison, validation, provenance, and light theme](docs/walkthrough/app-walkthrough.gif)](docs/walkthrough/app-walkthrough.mp4)
+[![Continuous BranchTrace walkthrough showing Circuit Graph and Layer River views, intervention comparison, validation, and a theme change](docs/walkthrough/app-walkthrough.gif)](docs/walkthrough/app-walkthrough.mp4)
 
 [Watch the full-resolution H.264 walkthrough](docs/walkthrough/app-walkthrough.mp4) · [Open the poster frame](docs/walkthrough/app-walkthrough-poster.jpg)
 
-The walkthrough uses only the running application. It opens the two-digit carry
-study, reads the Graph and River representations, selects the Carry-one feature,
-runs a stored patch branch, and follows the page into validation and provenance.
+The walkthrough uses only the running application. It opens the Jordan →
+basketball study, reads the Graph and River representations, selects the
+Basketball association MLP, runs its stored suppress branch, follows the page
+into validation, and switches theme.
 No interface screen is mocked or generated. Path width encodes larger authored
 fixture contribution; line style, labels, and color distinguish positive,
 negative, residual, and branch-changed paths.
