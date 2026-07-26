@@ -9,7 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.140-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-39%20passing-176BCA)](#verification)
+[![Tests](https://img.shields.io/badge/tests-46%20passing-176BCA)](#verification)
 [![npm audit](https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-1d7d69)](#verification)
 
 BranchTrace is a mechanistic-interpretability IDE. It turns a cached artifact into a
@@ -42,19 +42,20 @@ checkpoint was downloaded or executed. Every surface shows
 
 ## Continuous app walkthrough
 
-[![Continuous BranchTrace walkthrough showing circuit inspection, causal interventions, and model-version comparison](docs/walkthrough/app-walkthrough.gif)](docs/walkthrough/app-walkthrough.mp4)
+[![Continuous BranchTrace walkthrough showing Circuit Graph and Layer River views, intervention comparison, validation, provenance, and light theme](docs/walkthrough/app-walkthrough.gif)](docs/walkthrough/app-walkthrough.mp4)
 
 [Watch the full-resolution H.264 walkthrough](docs/walkthrough/app-walkthrough.mp4) · [Open the poster frame](docs/walkthrough/app-walkthrough-poster.jpg)
 
-This uninterrupted capture shows the running IDE selecting stored circuit features,
-opening the distinct two-digit carry study, moving between Circuit Graph and Layer
-River, replaying a branched intervention, inspecting validation and provenance, and
-switching the complete workbench to its light theme.
+The walkthrough uses only recordings of the running IDE. It opens the two-digit
+carry study, selects the Carry-one feature, moves between Circuit Graph and Layer
+River, runs a stored patch branch, compares the result, reviews Validation and
+Provenance, and finishes in the complete light-theme workbench.
 
-Every frame is a continuous capture of the actual interface. Path width encodes
-larger fixture-estimated contribution, teal/red distinguish positive and
-negative contribution, and amber appears only after a branch reports downstream
-divergence.
+A slow 16:9 camera crop keeps both the graph and lower analysis panel readable, and
+a soft dissolve joins the live branch result to the live Validation/Provenance
+review. No interface screen is mocked or generated. Path width encodes larger
+fixture-estimated contribution, teal/red distinguish positive and negative
+contribution, and amber appears only after a branch reports downstream divergence.
 
 ## Why this exists
 
@@ -231,7 +232,10 @@ Run all web checks:
 npm run verify
 ```
 
-`npm run verify` builds the production worker, type-checks and lints the web app, runs the browser-side and rendered-HTML suites, checks/formats the Python service with Ruff, runs the engine/API tests, and audits npm dependencies. The individual Python test command is:
+`npm run verify` builds the production worker, type-checks and lints the web app,
+runs 14 Vitest component/interaction checks and 7 Node circuit/rendering checks,
+checks the Python service with Ruff, runs 25 engine/API tests, and audits npm
+dependencies. The individual Python test command is:
 
 ```bash
 .venv/bin/pytest service/tests
@@ -242,9 +246,8 @@ Verified locally:
 | Check | Result |
 | --- | --- |
 | Vinext/Next.js production build | Passed |
-| Browser-side circuit/intervention semantics | 5 passed |
-| DOM interaction workflows (theme, graph tools, artifacts, modes, provenance) | 7 passed |
-| Server-rendered product and metadata tests | 2 passed |
+| Vitest component, interaction, geometry, and validation tests | 14 passed |
+| Node circuit-engine and server-rendered product tests | 7 passed |
 | ESLint | Passed |
 | TypeScript compiler (`--noEmit`) | Passed |
 | Python formatting and linting (Ruff) | Passed |
@@ -253,11 +256,12 @@ Verified locally:
 | Live HTTP smoke (`/`, `/health`, `/v1/interventions`) | Passed |
 | npm production/development dependency audit | 0 vulnerabilities |
 
-The 39 checks cover theme persistence, typed graph synthesis, materially distinct
-topologies, stored suppression/patch/amplification, negative controls, logit deltas,
-residual accounting, provenance, replay stability, artifact-specific labels, adapter
-target/shape validation, invalid IDs and request fields, API health, and a complete
-answer-changing workflow.
+The 46 tests comprise 14 Vitest checks, 7 Node test-runner checks, and 25 Python
+checks. Together they cover theme persistence, typed graph synthesis, materially
+distinct topologies, stored suppression/patch/amplification, negative controls,
+logit deltas, residual accounting, provenance, replay stability, artifact-specific
+labels, adapter target/shape validation, invalid IDs and request fields, API health,
+and a complete answer-changing workflow.
 
 ## From fixture to real model
 
