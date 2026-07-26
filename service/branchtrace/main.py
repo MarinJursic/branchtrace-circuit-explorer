@@ -14,10 +14,10 @@ from .models import (
 
 app = FastAPI(
     title="BranchTrace API",
-    version="0.1.0",
+    version="0.2.0",
     description=(
-        "Typed deterministic circuit fixtures and counterfactual intervention results. "
-        "The adapter boundary can later be backed by PyTorch activation hooks."
+        "Typed deterministic circuit artifacts with stored intervention/logit "
+        "measurements and explicit provenance. No endpoint runs a model."
     ),
 )
 app.add_middleware(

@@ -11,6 +11,7 @@ class NodeKind(StrEnum):
     ATTENTION = "attention"
     MLP = "mlp"
     SAE = "sae"
+    ERROR = "error"
     LOGIT = "logit"
 
 
@@ -35,14 +36,27 @@ class CircuitEdge(BaseModel):
     source: str
     target: str
     contribution: float = Field(ge=-1.0, le=1.0)
-    path: Literal["attention", "mlp", "residual", "logit"]
+    path: Literal["attention", "mlp", "residual", "error", "logit"]
 
 
 class ModelRun(BaseModel):
     model: str
     prompt: str
     answer: str
-    confidence: float = Field(ge=0.0, le=1.0)
+    completion_probability: float = Field(ge=0.0, le=1.0)
+    logit: float
+
+
+class ArtifactManifest(BaseModel):
+    artifact_id: str
+    schema_version: str = "branchtrace-artifact-v2"
+    evidence_class: Literal["deterministic-fixture"] = "deterministic-fixture"
+    model_revision: str = "reference-target-not-bundled"
+    source_url: str = "https://github.com/decoderesearch/circuit-tracer"
+    caveat: str = (
+        "Generated locally without model weights. Values validate the application "
+        "contract and are not empirical claims about Gemma."
+    )
 
 
 class CircuitGraph(BaseModel):
@@ -52,7 +66,8 @@ class CircuitGraph(BaseModel):
     nodes: list[CircuitNode]
     edges: list[CircuitEdge]
     focus_feature_id: str
-    fixture_version: str = "branchtrace-fixture-v1"
+    manifest: ArtifactManifest
+    fixture_version: str = "branchtrace-fixture-v2"
 
 
 class DemoSummary(BaseModel):
@@ -92,9 +107,15 @@ class InterventionResult(BaseModel):
     selected_contribution_before: float
     selected_contribution_after: float
     deterministic_replay_id: str
+    baseline_logit: float
+    result_logit: float
+    observed_logit_delta: float
+    predicted_logit_delta: float
+    unexplained_residual: float
+    evidence_class: Literal["deterministic-fixture"] = "deterministic-fixture"
     caveat: str = (
-        "This result is generated from a deterministic public-model-style fixture. "
-        "It demonstrates an intervention contract, not a claim about a deployed model."
+        "This stored deterministic fixture was generated locally without model weights. "
+        "It demonstrates an intervention contract, not an empirical model claim."
     )
 
 

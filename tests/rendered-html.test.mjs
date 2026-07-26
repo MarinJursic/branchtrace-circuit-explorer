@@ -21,14 +21,15 @@ test("server-renders the finished BranchTrace product shell", async () => {
   const html = await response.text();
   assert.match(html, /<title>BranchTrace — Model Circuit Explorer<\/title>/i);
   assert.match(html, /BranchTrace/);
-  assert.match(html, /Model circuit explorer/i);
+  assert.match(html, /Mechanistic Debugger IDE/i);
   assert.match(html, /Precomputed studies/i);
   assert.match(html, /Run branched execution/i);
   assert.match(html, /MODEL VERSION DIFF/i);
   assert.match(html, /Interpretation boundary/i);
   assert.match(html, /Switch to dark theme/i);
   assert.match(html, /model completion/i);
-  assert.match(html, /8-node subgraph/i);
+  assert.match(html, /9-node subgraph/i);
+  assert.match(html, /FIXTURE · NO MODEL RUNNING/i);
   assert.doesNotMatch(html, /starter-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 

@@ -1,4 +1,10 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { BranchTraceApp } from "../app/branchtrace-app";
@@ -30,13 +36,13 @@ describe("BranchTraceApp interactions", () => {
     const user = userEvent.setup();
     render(<BranchTraceApp />);
 
-    expect(screen.getByTestId("layer-river")).toBeTruthy();
-    expect(screen.queryByTestId("circuit-graph")).toBeNull();
-
-    await user.click(screen.getByTestId("view-graph"));
     expect(screen.getByTestId("circuit-graph")).toBeTruthy();
     expect(screen.queryByTestId("layer-river")).toBeNull();
-    expect(screen.getByTestId("view-graph").getAttribute("aria-selected")).toBe("true");
+
+    await user.click(screen.getByTestId("view-river"));
+    expect(screen.getByTestId("layer-river")).toBeTruthy();
+    expect(screen.queryByTestId("circuit-graph")).toBeNull();
+    expect(screen.getByTestId("view-river").getAttribute("aria-selected")).toBe("true");
   });
 
   it("suppresses the focus feature and reports the answer and downstream changes", async () => {
@@ -46,11 +52,11 @@ describe("BranchTraceApp interactions", () => {
     await user.click(screen.getByTestId("run-intervention"));
     const result = screen.getByTestId("branch-result");
 
-    expect(within(result).getByText("Lyon")).toBeTruthy();
-    expect(within(result).getByText("Layer 17")).toBeTruthy();
+    expect(within(result).getByText("baseball")).toBeTruthy();
+    expect(within(result).getByText("Layer 12")).toBeTruthy();
     expect(
       within(screen.getByTestId("changed-components")).getByText(
-        /SAE feature 1,092 → “Paris” logit/,
+        /Basketball association → Sport answer feature → “basketball” logit/,
       ),
     ).toBeTruthy();
     expect(screen.getByTestId("divergence-marker")).toBeTruthy();
@@ -61,16 +67,16 @@ describe("BranchTraceApp interactions", () => {
     render(<BranchTraceApp />);
 
     await user.click(screen.getByTestId("run-intervention"));
-    expect(screen.getByText("Lyon")).toBeTruthy();
+    expect(screen.getByText("baseball")).toBeTruthy();
 
-    await user.click(screen.getByTestId("node-feature-812"));
-    expect(screen.queryByText("Lyon")).toBeNull();
+    await user.click(screen.getByTestId("graph-node-error-jordan"));
+    expect(screen.queryByText("baseball")).toBeNull();
     expect(screen.getByText("Run an intervention to materialize this branch")).toBeTruthy();
 
     await user.click(screen.getByTestId("run-intervention"));
     const result = screen.getByTestId("branch-result");
-    expect(within(result).getByText("Paris")).toBeTruthy();
-    expect(within(result).getByText("ANSWER PRESERVED")).toBeTruthy();
+    expect(within(result).getByText("basketball")).toBeTruthy();
+    expect(within(result).getByText("OUTPUT PRESERVED")).toBeTruthy();
     expect(within(result).getByText("None detected")).toBeTruthy();
     expect(within(result).getByText("No nodes crossed threshold")).toBeTruthy();
   });
@@ -82,29 +88,115 @@ describe("BranchTraceApp interactions", () => {
     await user.click(screen.getByTestId("mode-amplify"));
     await user.click(screen.getByTestId("run-intervention"));
     let result = screen.getByTestId("branch-result");
-    expect(within(result).getByText("Paris")).toBeTruthy();
-    expect(within(result).getByText("98.0%")).toBeTruthy();
-    expect(within(result).getByText("ANSWER PRESERVED")).toBeTruthy();
+    expect(within(result).getByText("basketball")).toBeTruthy();
+    expect(within(result).getByText("0.72")).toBeTruthy();
+    expect(within(result).getByText("OUTPUT PRESERVED")).toBeTruthy();
 
     await user.click(screen.getByTestId("mode-patch"));
     expect(screen.getByText("Run an intervention to materialize this branch")).toBeTruthy();
     await user.click(screen.getByTestId("run-intervention"));
     result = screen.getByTestId("branch-result");
-    expect(within(result).getByText("Lyon")).toBeTruthy();
-    expect(within(result).getByText("CHANGED ANSWER")).toBeTruthy();
+    expect(within(result).getByText("baseball")).toBeTruthy();
+    expect(within(result).getByText("OUTPUT CHANGED")).toBeTruthy();
   });
 
-  it("selects demos and displays a study-specific model-version diff", async () => {
+  it("selects materially different artifacts and displays exact provenance", async () => {
     const user = userEvent.setup();
     render(<BranchTraceApp />);
 
     await user.click(screen.getByTestId("demo-arithmetic"));
-    expect(screen.getByText("Compute: 47 + 38 =")).toBeTruthy();
-    expect(screen.getAllByText("85")).toHaveLength(2);
+    expect(screen.getAllByText("Compute: 36 + 59 =").length).toBeGreaterThan(0);
+    expect(screen.getByText("95")).toBeTruthy();
+    expect(screen.getByText("12-node subgraph")).toBeTruthy();
 
-    await user.click(screen.getByTestId("version-diff-toggle"));
-    expect(screen.getByText("Math tune B")).toBeTruthy();
-    expect(screen.getAllByText("L9 · SAE feature 2,036")).toHaveLength(2);
-    expect(screen.getByText(/Fine-tuning strengthens the same carry feature/)).toBeTruthy();
+    await user.click(screen.getByRole("tab", { name: "provenance" }));
+    expect(screen.getAllByText("addition-carry-v2").length).toBeGreaterThan(0);
+    expect(screen.getByText("deterministic-fixture")).toBeTruthy();
+    expect(screen.getByText(/generated locally without model weights/i)).toBeTruthy();
+  });
+
+  it("opens the command palette and exposes an accessible node table", async () => {
+    const user = userEvent.setup();
+    render(<BranchTraceApp />);
+
+    await user.click(screen.getByRole("button", { name: "Open command palette" }));
+    expect(screen.getByRole("dialog", { name: "Command palette" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /Toggle accessible node table/i }));
+    expect(screen.getByRole("table", { name: "Accessible circuit node table" })).toBeTruthy();
+  });
+
+  it("derives validation metrics and version contrast from active state", async () => {
+    const user = userEvent.setup();
+    render(<BranchTraceApp />);
+
+    await user.click(screen.getByTestId("demo-arithmetic"));
+    await user.click(screen.getByTestId("mode-amplify"));
+    await user.click(screen.getByRole("tab", { name: "validation" }));
+
+    expect(screen.getByText(/Carry-one feature, the amplify branch/)).toBeTruthy();
+    expect(screen.getByText("0.66")).toBeTruthy();
+    expect(screen.getByText("0.72")).toBeTruthy();
+    expect(screen.getByText("0.06")).toBeTruthy();
+    expect(screen.getByText(/no-carry contrast/i)).toBeTruthy();
+    expect(screen.getByText(/bypasses carry/i)).toBeTruthy();
+  });
+
+  it("only offers tab close when it can perform a meaningful action", async () => {
+    const user = userEvent.setup();
+    render(<BranchTraceApp />);
+
+    expect(screen.queryByRole("button", { name: /Close Jordan/ })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "More explorer actions" }),
+    ).toBeNull();
+
+    await user.click(screen.getByTestId("demo-arithmetic"));
+    const close = screen.getByRole("button", { name: "Close Two-digit carry" });
+    await user.click(close);
+    expect(screen.queryByText("Compute: 36 + 59 =")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Close Jordan/ })).toBeNull();
+  });
+
+  it("supports command arrows and restores focus to its trigger", async () => {
+    const user = userEvent.setup();
+    render(<BranchTraceApp />);
+
+    const trigger = screen.getByRole("button", {
+      name: "Open command palette",
+    });
+    await user.click(trigger);
+    const input = screen.getByRole("textbox", { name: "Command search" });
+    expect(document.activeElement).toBe(input);
+
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(
+      screen.getByRole("table", { name: "Accessible circuit node table" }),
+    ).toBeTruthy();
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it("applies feature search to the accessible node table", async () => {
+    const user = userEvent.setup();
+    render(<BranchTraceApp />);
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Search circuit features" }),
+      "country-name competitor",
+    );
+    await user.click(screen.getByRole("button", { name: "Node table" }));
+    const table = screen.getByRole("table", {
+      name: "Accessible circuit node table",
+    });
+    expect(within(table).getByText("Country-name competitor")).toBeTruthy();
+    expect(within(table).queryByText("Basketball association")).toBeNull();
+  });
+
+  it("renders complete sha256 provenance identifiers", async () => {
+    const user = userEvent.setup();
+    render(<BranchTraceApp />);
+    await user.click(screen.getByRole("tab", { name: "provenance" }));
+
+    const hashes = screen.getAllByText(/^sha256:[a-f0-9]{64}$/);
+    expect(hashes).toHaveLength(2);
   });
 });

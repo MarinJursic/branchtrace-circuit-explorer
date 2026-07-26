@@ -1,6 +1,6 @@
 # BranchTrace Model Circuit Explorer
 
-> Git branching, but for internal neural-network computations.
+> A debugger-style workbench for circuit hypotheses and stored interventions.
 
 [![Live preview](https://img.shields.io/badge/live-preview-2ea44f?logo=github)](https://marinjursic.github.io/branchtrace-circuit-explorer/)
 [![Preview status](https://github.com/MarinJursic/branchtrace-circuit-explorer/actions/workflows/pages.yml/badge.svg)](https://github.com/MarinJursic/branchtrace-circuit-explorer/actions/workflows/pages.yml)
@@ -9,18 +9,36 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.140-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-37%20passing-1d7d69)](#verification)
+[![Tests](https://img.shields.io/badge/tests-39%20passing-176BCA)](#verification)
 [![npm audit](https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-1d7d69)](#verification)
 
-BranchTrace is a portfolio-quality mechanistic-interpretability workbench. It turns a cached activation summary into a compact circuit hypothesis, lets the user branch an execution at an influential component, and makes the resulting counterfactual easy to inspect:
+BranchTrace is a mechanistic-interpretability IDE. It turns a cached artifact into a
+testable circuit hypothesis, lets the user replay a stored intervention at a selected
+component, and keeps attribution, intervention, validation, and provenance visible in
+one keyboard-friendly workbench:
 
-- select an attention head, sparse feature, or residual-path component;
+- open multiple materially different circuit artifacts in editor tabs;
+- search, zoom, fit, inspect a minimap, or switch to an accessible node table;
+- select an attention head, MLP, sparse feature, error node, or output logit;
 - **suppress**, **amplify**, or **patch** its activation;
-- compare the original and branched answers;
-- locate the **first meaningful divergence**;
-- inspect how the apparent circuit changes across model versions.
+- compare baseline and result logits;
+- inspect the attributed delta, stored intervention delta, and unexplained residual;
+- audit an exact artifact manifest.
 
-No credentials, model weights, or GPU are required. The included examples are deterministic public-model-style fixtures, so the entire interaction is reproducible on a laptop.
+No credentials, model weights, or GPU are required. The four included examples are
+locally authored deterministic fixtures with different graph topologies:
+
+| Artifact | Structure exercised | Reference target |
+| --- | --- | --- |
+| Jordan → basketball | ambiguous name, athlete branch, country competitor | Gemma 2 2B schema |
+| Peso → baht | relational analogy and target-currency competition | Gemma 2 2B schema |
+| Expansion → NASA | multi-token acronym formation | Gemma 2 2B schema |
+| 36 + 59 → 95 | digit binding, carry, composition, formatting | Gemma 2 2B schema |
+
+The model name is a compatibility target, not provenance for the numbers. No
+checkpoint was downloaded or executed. Every surface shows
+`DETERMINISTIC FIXTURE` / `NO MODEL RUNNING`, and every result returns
+`evidence_class: deterministic-fixture`.
 
 ## Continuous app walkthrough
 
@@ -28,27 +46,15 @@ No credentials, model weights, or GPU are required. The included examples are de
 
 [Watch the full-resolution H.264 walkthrough](docs/walkthrough/app-walkthrough.mp4) · [Open the poster frame](docs/walkthrough/app-walkthrough-poster.jpg)
 
-This uninterrupted 20-second capture shows the running application moving from
-the Layer River to the Circuit Graph, suppressing the high-influence
-`SAE feature 423`, and materializing a counterfactual branch in which the answer
-changes from **Paris** to **Lyon** at the first meaningful divergence. It then
-selects low-score `SAE feature 812`, reruns the same intervention as a control,
-and shows that the answer is preserved with no threshold-crossing downstream
-nodes. The final state opens the model-version comparison to expose the
-fixture’s layer shift and causal-precision delta.
+This uninterrupted capture shows the running IDE selecting stored circuit features,
+opening the distinct two-digit carry study, moving between Circuit Graph and Layer
+River, replaying a branched intervention, inspecting validation and provenance, and
+switching the complete workbench to its light theme.
 
 Every frame is a continuous capture of the actual interface. Path width encodes
 larger fixture-estimated contribution, teal/red distinguish positive and
 negative contribution, and amber appears only after a branch reports downstream
 divergence.
-
-### Literal still frame
-
-![BranchTrace application with the factual-recall study and selected SAE feature 423](docs/media/branchtrace-live.png)
-
-The static frame preserves the complete three-column workspace for closer
-inspection: precomputed studies, the selected circuit hypothesis, and the
-intervention lab.
 
 ## Why this exists
 
@@ -64,42 +70,55 @@ BranchTrace does **not** claim to reveal private chain-of-thought, a definitive 
 
 ## Product walkthrough
 
-1. Choose one of four built-in studies: factual recall, translation register, refusal behavior, or arithmetic carry. Use the header control to switch between the light and dark themes; the preference persists on the device.
-2. The **Layer River** displays tokens, attention paths, MLP and SAE features, residual flow, and the output logit. Path width encodes estimated contribution; color distinguishes positive and negative influence.
-3. Switch to **Circuit Graph** for a node-link view whose edge labels identify attention, MLP, residual, and logit paths.
-4. Click a component. The intervention lab shows its layer, activation magnitude, attribution score, and fixture expectations.
+1. Open one of four artifacts from the Explorer. Each opens in a persistent editor
+   tab with a different node/edge topology.
+2. The **Circuit Graph** displays tokens, attention paths, MLP/SAE/error features,
+   residual flow, and the output logit. Search, zoom, fit, minimap, keyboard node
+   navigation, and an accessible table provide equivalent ways to inspect it.
+3. Switch to **Layer River** for a depth-oriented view.
+4. Click a component. The Inspector shows its layer, activation magnitude,
+   attribution score, stored token examples, and artifact identifier.
 5. Choose:
    - **Suppress** — scale the selected activation to zero.
    - **Amplify** — scale it to `1.80×`.
    - **Patch** — replace it with a contrast-run activation.
-6. Run the branch. The counterfactual panel shows the answer, confidence, fixture-selected downstream nodes, and first meaningful divergence. Low-score controls correctly produce no meaningful divergence.
-7. Enable **Model Version Diff** to compare where an analogous behavior appears in a second precomputed snapshot. The diff changes with the selected study.
+6. Run the branch. The bottom panel reports the baseline and result logit, stored
+   observed delta, attributed delta, unexplained residual, changed nodes, and first
+   stored downstream change. It never labels a fixture percentage as confidence.
+7. Open **Validation** for the attribution-versus-intervention contract and
+   **Provenance** for schema, evidence class, exact artifact ID, hashes, source, and
+   caveat.
 
-The default factual-recall fixture is intentionally easy to read:
+The default fixture is intentionally easy to read:
 
 ```text
-Original:  Eiffel Tower → Feature 423 → answer “Paris”  (94.2%)
-Branch:    Eiffel Tower → Feature 423 suppressed
-First divergence: Layer 17
-Changed answer: “Lyon”  (61.8%)
+Original:  Michael Jordan → athlete → basketball association → “basketball”
+Branch:    Basketball association suppressed
+Stored first change: Layer 12
+Baseline / result logit: 4.21 / 1.75
+Attributed / observed fixture Δ: −2.18 / −2.46
+Unexplained residual: −0.28
 ```
 
-The numbers above are deterministic demonstration data. `L0–L18` is a normalized fixture-depth axis, not a claim that every displayed item is a transformer block. The displayed answer is a model completion and may span multiple tokens. These values validate the product and API workflow; they are not measurements from Gemma or any other downloaded checkpoint.
+The numbers above are authored deterministic test data. `L0–L18` is a normalized
+fixture-depth axis, not a claim that every item is a transformer block. Values
+validate the product and API workflow; they are not measurements from Gemma or any
+other downloaded checkpoint.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    UI["Next.js / TypeScript UI"] --> Fixtures["Precomputed study fixtures"]
-    UI --> Views["Layer River + circuit graph"]
-    UI --> Branch["Selected-node branch comparison"]
+    UI["Next.js / TypeScript IDE"] --> Fixtures["Four distinct artifact fixtures"]
+    UI --> Views["Graph + river + accessible table"]
+    UI --> Branch["Stored intervention replay"]
     API["FastAPI service"] --> Engine["Deterministic circuit engine"]
     Engine --> Models["Pydantic circuit + intervention models"]
     Engine --> Fixtures
     Adapter["ActivationProvider protocol"] --> FixtureAdapter["Executable fixture adapter"]
     Adapter -. future .-> Engine
     Torch["Caller-owned PyTorch model + hooks"] -. optional .-> Adapter
-    Engine --> Result["Typed divergence result + replay ID"]
+    Engine --> Result["Logit delta + residual + replay ID"]
     Result --> UI
 ```
 
@@ -107,9 +126,9 @@ flowchart LR
 
 | Surface | Responsibility |
 | --- | --- |
-| `app/branchtrace-app.tsx` | Accessible study/view/component selection, branch comparison, changed-node highlighting, and model-version diff |
-| `app/circuit-data.ts` | Typed studies, graph topology, version diffs, and the deterministic offline intervention mirror |
-| `app/globals.css` | Responsive research-console visual system and graph styling |
+| `app/branchtrace-app.tsx` | Activity bar, Explorer, editor tabs, graph tools, Inspector, command palette, accessible table, and bottom analysis panel |
+| `app/circuit-data.ts` | Four distinct typed artifacts, exact manifests, and stored logit/intervention measurements |
+| `app/globals.css` | Responsive debugger-IDE visual system and light/dark graph styling |
 | `app/layout.tsx` | Product metadata and social preview |
 
 Both visualizations are purpose-built and dependency-light: contribution paths are rendered in SVG, while nodes remain semantic HTML buttons with visible keyboard focus and `aria-pressed` state. The Layer River emphasizes depth and flow; the Circuit Graph emphasizes topology and typed edges. The UI provides tested light and dark themes, initializes from the saved preference or system preference without a theme flash, honors reduced-motion preferences, and reflows for tablet/mobile layouts.
@@ -124,7 +143,11 @@ Both visualizations are purpose-built and dependency-light: contribution paths a
 | `service/branchtrace/adapters.py` | Runtime-checkable provider protocol, shape-checked executable fixture adapter, and explicit PyTorch hook seam |
 | `service/branchtrace/main.py` | FastAPI transport, OpenAPI docs, CORS, and domain-error mapping |
 
-The engine is pure and deterministic. Identical intervention inputs produce an identical 16-character replay ID. Model-specific code stays behind `ActivationProvider`; its included fixture implementation validates prompt, target, layer, and activation shape before patching. `TorchHookBoundary` intentionally raises `NotImplementedError` because no model-specific hook points, tokenizer, or continuation strategy can be honest without choosing a real model architecture.
+The engine is pure and deterministic. Identical intervention inputs produce an
+identical 16-character replay ID. Every graph includes an error/residual node and an
+`ArtifactManifest`; every intervention result includes baseline/result logits,
+observed and attributed deltas, residual, evidence class, and caveat. Model-specific
+code stays behind `ActivationProvider`.
 
 ## Quick start
 
@@ -182,7 +205,7 @@ curl -X POST http://127.0.0.1:8000/v1/interventions \
   -H "Content-Type: application/json" \
   -d '{
     "demo_id": "factual-recall",
-    "feature_id": "feature-423",
+    "feature_id": "mlp-basketball",
     "mode": "suppress"
   }'
 ```
@@ -192,6 +215,9 @@ The result contains:
 - original and branched `ModelRun` values;
 - `first_layer`, `changed_node_ids`, and `answer_changed`;
 - selected contribution before and after the intervention;
+- baseline and result logits;
+- stored observed delta, attributed delta, and unexplained residual;
+- explicit `evidence_class: deterministic-fixture`;
 - a stable `deterministic_replay_id`;
 - an explicit fixture caveat.
 
@@ -217,17 +243,21 @@ Verified locally:
 | --- | --- |
 | Vinext/Next.js production build | Passed |
 | Browser-side circuit/intervention semantics | 5 passed |
-| DOM interaction workflows (theme persistence, views, demos, all modes, diffs) | 6 passed |
+| DOM interaction workflows (theme, graph tools, artifacts, modes, provenance) | 7 passed |
 | Server-rendered product and metadata tests | 2 passed |
 | ESLint | Passed |
 | TypeScript compiler (`--noEmit`) | Passed |
 | Python formatting and linting (Ruff) | Passed |
-| Deterministic engine, adapter, and FastAPI contracts | 24 passed |
+| Deterministic engine, adapter, and FastAPI contracts | 25 passed |
 | End-to-end API flow (`demos → circuit → suppress`) | Passed |
 | Live HTTP smoke (`/`, `/health`, `/v1/interventions`) | Passed |
 | npm production/development dependency audit | 0 vulnerabilities |
 
-The 37 checks cover theme persistence, typed graph synthesis, high-influence suppression, low-score controls, amplification, patch provenance, replay stability, intervention-at-logit ordering, study-specific labels, safe refusal counterfactuals, adapter target/shape validation, invalid IDs and request fields, API health, and a complete answer-changing workflow. Source-presence assertions are supplementary; branch semantics are executed directly in TypeScript and Python.
+The 39 checks cover theme persistence, typed graph synthesis, materially distinct
+topologies, stored suppression/patch/amplification, negative controls, logit deltas,
+residual accounting, provenance, replay stability, artifact-specific labels, adapter
+target/shape validation, invalid IDs and request fields, API health, and a complete
+answer-changing workflow.
 
 ## From fixture to real model
 

@@ -3,8 +3,9 @@ from __future__ import annotations
 from copy import deepcopy
 from hashlib import sha256
 
-from .fixtures import BASE_EDGES, BASE_NODES, DEMOS
+from .fixtures import DEMOS
 from .models import (
+    ArtifactManifest,
     CircuitEdge,
     CircuitGraph,
     CircuitNode,
@@ -26,9 +27,9 @@ class UnknownFeatureError(KeyError):
 
 
 class CircuitEngine:
-    """Pure, deterministic fixture engine with an adapter-friendly API boundary."""
+    """Pure replay engine for explicitly labeled, locally authored artifacts."""
 
-    fixture_version = "branchtrace-fixture-v1"
+    fixture_version = "branchtrace-fixture-v2"
 
     def list_demos(self) -> list[DemoSummary]:
         return [
@@ -44,22 +45,19 @@ class CircuitEngine:
 
     def get_circuit(self, demo_id: str) -> CircuitGraph:
         demo = self._demo(demo_id)
-        nodes = deepcopy(BASE_NODES)
-        nodes[0]["label"] = demo["token_label"]
-        focus_node = next(node for node in nodes if node["id"] == "feature-423")
-        focus_node["label"] = demo["feature_display_name"]
-        focus_node["detail"] = demo["feature_label"]
-        focus_node["activation_sigma"] = demo["feature_activation_sigma"]
-        nodes[-1]["label"] = f"“{demo['answer']}” logit"
-        nodes[-1]["detail"] = f"+{demo['confidence'] * 4.08:.2f} logit contribution"
-
         return CircuitGraph(
             demo_id=demo_id,
             task=demo["task"],
-            baseline=self._run(demo, demo["answer"], demo["confidence"]),
-            nodes=[CircuitNode(**node) for node in nodes],
-            edges=[CircuitEdge(**edge) for edge in BASE_EDGES],
-            focus_feature_id="feature-423",
+            baseline=self._run(
+                demo,
+                demo["answer"],
+                demo["completion_probability"],
+                demo["baseline_logit"],
+            ),
+            nodes=[CircuitNode(**item) for item in deepcopy(demo["nodes"])],
+            edges=[CircuitEdge(**item) for item in deepcopy(demo["edges"])],
+            focus_feature_id=demo["focus_feature_id"],
+            manifest=ArtifactManifest(artifact_id=demo["artifact_id"]),
             fixture_version=self.fixture_version,
         )
 
@@ -70,44 +68,33 @@ class CircuitEngine:
         if selected is None:
             raise UnknownFeatureError(request.feature_id)
 
-        strength = request.strength
         if request.mode == InterventionMode.SUPPRESS:
-            scale = 0.0 if strength is None else strength
+            scale = 0.0 if request.strength is None else request.strength
         elif request.mode == InterventionMode.AMPLIFY:
-            scale = 1.8 if strength is None else strength
+            scale = 1.8 if request.strength is None else request.strength
         else:
-            scale = 0.32 if strength is None else strength
+            scale = 0.32 if request.strength is None else request.strength
 
-        influential = selected.influential or abs(selected.contribution) >= 0.7
-        meaningful = (
-            abs(selected.contribution) >= 0.4
-            if request.mode == InterventionMode.AMPLIFY
-            else influential and scale < 0.75
-        )
-        changed = meaningful and request.mode != InterventionMode.AMPLIFY
-
-        if request.mode == InterventionMode.AMPLIFY and meaningful:
-            confidence = min(0.994, demo["confidence"] + (0.038 * min(scale, 2.0) / 1.8))
-            answer = demo["answer"]
-        elif changed:
-            confidence = demo["branch_confidence"]
-            answer = demo["alternative"]
+        is_stored_focus = request.feature_id == demo["focus_feature_id"]
+        if is_stored_focus:
+            stored = demo["measurements"][request.mode.value]
         else:
-            confidence = max(0.5, demo["confidence"] - abs(1.0 - scale) * 0.035)
-            answer = demo["answer"]
+            stored = {
+                "baseline_logit": demo["baseline_logit"],
+                "result_logit": demo["baseline_logit"] - 0.03,
+                "predicted_delta": -0.02,
+                "result": demo["answer"],
+                "completion_probability": demo["completion_probability"] - 0.004,
+                "first_layer": None,
+                "changed_node_ids": [],
+            }
 
-        after = round(selected.contribution * scale, 4)
-        first_layer = max(demo["divergence_layer"], selected.layer) if meaningful else None
-        changed_nodes = (
-            [node.id for node in circuit.nodes if node.layer >= first_layer]
-            if first_layer is not None
-            else []
-        )
-        explanation = (
-            f"{request.mode.value.title()} changed downstream activation beginning at layer {first_layer}."
-            if first_layer is not None
-            else "The intervention stayed below the fixture’s meaningful-divergence threshold."
-        )
+        baseline_logit = round(stored["baseline_logit"], 4)
+        result_logit = round(stored["result_logit"], 4)
+        observed_delta = round(result_logit - baseline_logit, 4)
+        predicted_delta = round(stored["predicted_delta"], 4)
+        residual = round(observed_delta - predicted_delta, 4)
+        answer_changed = stored["result"] != demo["answer"]
         replay_payload = (
             f"{self.fixture_version}:{request.demo_id}:{request.feature_id}:"
             f"{request.mode.value}:{scale:.4f}:{request.patch_source or '-'}"
@@ -116,25 +103,40 @@ class CircuitEngine:
         return InterventionResult(
             request=request,
             original=circuit.baseline,
-            branched=self._run(demo, answer, confidence),
+            branched=self._run(
+                demo,
+                stored["result"],
+                stored["completion_probability"],
+                result_logit,
+            ),
             divergence=Divergence(
-                first_layer=first_layer,
-                changed_node_ids=changed_nodes,
-                answer_changed=answer != demo["answer"],
-                explanation=explanation,
+                first_layer=stored["first_layer"],
+                changed_node_ids=stored["changed_node_ids"],
+                answer_changed=answer_changed,
+                explanation=(
+                    f"Stored {request.mode.value} replay begins at layer {stored['first_layer']}."
+                    if stored["first_layer"] is not None
+                    else "Stored negative control has no downstream fixture changes."
+                ),
             ),
             selected_contribution_before=selected.contribution,
-            selected_contribution_after=after,
+            selected_contribution_after=round(selected.contribution * scale, 4),
             deterministic_replay_id=sha256(replay_payload.encode()).hexdigest()[:16],
+            baseline_logit=baseline_logit,
+            result_logit=result_logit,
+            observed_logit_delta=observed_delta,
+            predicted_logit_delta=predicted_delta,
+            unexplained_residual=residual,
         )
 
     @staticmethod
-    def _run(demo: dict, answer: str, confidence: float) -> ModelRun:
+    def _run(demo: dict, answer: str, completion_probability: float, logit: float) -> ModelRun:
         return ModelRun(
             model=demo["model"],
             prompt=demo["prompt"],
             answer=answer,
-            confidence=round(confidence, 4),
+            completion_probability=round(completion_probability, 4),
+            logit=round(logit, 4),
         )
 
     @staticmethod
