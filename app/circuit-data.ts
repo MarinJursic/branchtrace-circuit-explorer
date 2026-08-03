@@ -152,7 +152,7 @@ const manifest = (
   modelTarget: "google/gemma-2-2b",
   modelRevision: "reference-target-not-bundled",
   transcoderTarget: "Gemma Scope / circuit-tracer compatible schema",
-  generator: "BranchTrace deterministic fixture generator v2",
+  generator: "Circuit Interpretability deterministic fixture generator v2",
   sourceTitle: "circuit-tracer — open circuit tracing tools and examples",
   sourceUrl: "https://github.com/decoderesearch/circuit-tracer",
   license: "Application code MIT; fixture values authored for this repository",

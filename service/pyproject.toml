@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "branchtrace-service"
 version = "0.1.0"
-description = "Typed deterministic circuit synthesis and intervention service for BranchTrace"
+description = "Typed deterministic circuit synthesis and intervention service for Circuit Interpretability"
 readme = "../README.md"
 requires-python = ">=3.11"
 dependencies = [

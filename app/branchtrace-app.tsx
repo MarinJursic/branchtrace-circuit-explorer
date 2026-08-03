@@ -520,9 +520,9 @@ export function BranchTraceApp() {
   return (
     <main className="branchtrace-shell">
       <header className="masthead">
-        <a className="brand" href="#top" aria-label="BranchTrace home">
+        <a className="brand" href="#top" aria-label="Circuit Interpretability home">
           <span aria-hidden="true">BT</span>
-          <strong>BranchTrace</strong>
+          <strong>Circuit Interpretability</strong>
         </a>
         <p>
           Circuit hypotheses,
@@ -906,7 +906,7 @@ export function BranchTraceApp() {
       </section>
 
       <footer className="page-footer">
-        <strong>BranchTrace</strong>
+        <strong>Circuit Interpretability</strong>
         <p>
           Deterministic-fixture interface for testing circuit-analysis software.
         </p>

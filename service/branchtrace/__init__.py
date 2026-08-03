@@ -1,4 +1,4 @@
-"""Deterministic circuit synthesis and intervention primitives for BranchTrace."""
+"""Deterministic circuit synthesis and intervention primitives for Circuit Interpretability."""
 
 from .engine import CircuitEngine
 

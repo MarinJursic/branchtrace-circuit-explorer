@@ -13,7 +13,7 @@ from .models import (
 )
 
 app = FastAPI(
-    title="BranchTrace API",
+    title="Circuit Interpretability API",
     version="0.2.0",
     description=(
         "Typed deterministic circuit artifacts with stored intervention/logit "

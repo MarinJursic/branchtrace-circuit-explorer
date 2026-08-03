@@ -1,9 +1,9 @@
-# BranchTrace
+# Circuit Interpretability
 
 > An intervention-first notebook for testing circuit hypotheses.
 
-[![Live preview](https://img.shields.io/badge/live-preview-2ea44f?logo=github)](https://marinjursic.github.io/BranchTrace/)
-[![Preview status](https://github.com/MarinJursic/BranchTrace/actions/workflows/pages.yml/badge.svg)](https://github.com/MarinJursic/BranchTrace/actions/workflows/pages.yml)
+[![Live preview](https://img.shields.io/badge/live-preview-2ea44f?logo=github)](https://marinjursic.github.io/CircuitInterpretability/)
+[![Preview status](https://github.com/MarinJursic/CircuitInterpretability/actions/workflows/pages.yml/badge.svg)](https://github.com/MarinJursic/CircuitInterpretability/actions/workflows/pages.yml)
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-111714?logo=nextdotjs)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -12,7 +12,7 @@
 [![Tests](https://img.shields.io/badge/tests-50%20passing-176BCA)](#verification)
 [![npm audit](https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-1d7d69)](#verification)
 
-BranchTrace turns a cached artifact into a testable circuit hypothesis. Its numbered
+Circuit Interpretability turns a cached artifact into a testable circuit hypothesis. Its numbered
 notebook moves in one direction—**Trace → Intervene → Validate**—so the graph is never
 mistaken for the conclusion:
 
@@ -41,7 +41,7 @@ checkpoint was downloaded or executed. Every surface shows
 
 ## Continuous app walkthrough
 
-[![Continuous BranchTrace walkthrough showing Circuit Graph and Layer River views, intervention comparison, validation, and a theme change](docs/walkthrough/app-walkthrough.gif)](docs/walkthrough/app-walkthrough.mp4)
+[![Continuous Circuit Interpretability walkthrough showing Circuit Graph and Layer River views, intervention comparison, validation, and a theme change](docs/walkthrough/app-walkthrough.gif)](docs/walkthrough/app-walkthrough.mp4)
 
 [Watch the full-resolution H.264 walkthrough](docs/walkthrough/app-walkthrough.mp4) · [Open the poster frame](docs/walkthrough/app-walkthrough-poster.jpg)
 
@@ -55,7 +55,7 @@ negative, residual, and branch-changed paths.
 
 ## Why this exists
 
-Attribution graphs and activation patching are most useful when they lead to falsifiable interventions. A visually important node is not automatically causal; BranchTrace therefore centers the workflow on a before/after execution rather than treating a graph as an explanation by itself.
+Attribution graphs and activation patching are most useful when they lead to falsifiable interventions. A visually important node is not automatically causal; Circuit Interpretability therefore centers the workflow on a before/after execution rather than treating a graph as an explanation by itself.
 
 The MVP deliberately separates three claims:
 
@@ -63,7 +63,7 @@ The MVP deliberately separates three claims:
 2. **Causal test** — an intervention changes one component and observes downstream behavior.
 3. **Interpretation** — a human-readable label is a tentative description, not a uniquely correct semantic meaning.
 
-BranchTrace does **not** claim to reveal private chain-of-thought, a definitive reasoning transcript, or the one true circuit used by a model.
+Circuit Interpretability does **not** claim to reveal private chain-of-thought, a definitive reasoning transcript, or the one true circuit used by a model.
 
 ## Product walkthrough
 
@@ -298,7 +298,7 @@ The next research-grade evaluation would report faithfulness, completeness, spar
 
 ## Research grounding
 
-BranchTrace’s design is informed by primary sources:
+Circuit Interpretability’s design is informed by primary sources:
 
 - Google’s [Material 3 Expressive research](https://design.google/library/expressive-material-design-google-research) motivates using hierarchy to pull attention toward the next meaningful action, without importing the visual style of a generic dashboard.
 - W3C’s [WCAG 2.2](https://www.w3.org/TR/WCAG22/) and [ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/) inform visible focus, target sizing, disclosure, radio-group, and pressed-state behavior.

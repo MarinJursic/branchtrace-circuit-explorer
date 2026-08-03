@@ -13,14 +13,14 @@ async function render(path = "/") {
   );
 }
 
-test("server-renders the finished BranchTrace product shell", async () => {
+test("server-renders the finished Circuit Interpretability product shell", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>BranchTrace<\/title>/i);
-  assert.match(html, /BranchTrace/);
+  assert.match(html, /<title>Circuit Interpretability<\/title>/i);
+  assert.match(html, /Circuit Interpretability/);
   assert.match(html, /Circuit hypotheses/i);
   assert.match(html, /Choose a stored study/i);
   assert.match(html, /Run stored branch/i);
@@ -49,7 +49,7 @@ test("ships interaction hooks and removes starter-only metadata", async () => {
   assert.match(app, /data-testid="theme-toggle"/);
   assert.match(app, /runFixtureIntervention/);
   assert.match(app, /setBranched\(true\)/);
-  assert.match(layout, /title: "BranchTrace"/);
+  assert.match(layout, /title: "Circuit Interpretability"/);
   assert.match(layout, /\/og\.png/);
   assert.match(layout, /branchtrace-theme/);
   assert.doesNotMatch(layout, /Starter Project|starter-preview/);

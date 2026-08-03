@@ -7,7 +7,7 @@ const imageUrl = new URL(`${basePath}/og.png`, metadataBase).toString();
 
 export const metadata: Metadata = {
   metadataBase,
-  title: "BranchTrace",
+  title: "Circuit Interpretability",
   description:
     "Trace a circuit hypothesis, replay a stored intervention, and validate the result.",
   icons: {
@@ -15,14 +15,14 @@ export const metadata: Metadata = {
     shortcut: `${basePath}/favicon.svg`,
   },
   openGraph: {
-    title: "BranchTrace",
+    title: "Circuit Interpretability",
     description:
       "An intervention-first notebook for circuit hypotheses.",
-    images: [{ url: imageUrl, width: 1672, height: 941, alt: "BranchTrace model circuit explorer" }],
+    images: [{ url: imageUrl, width: 1672, height: 941, alt: "Circuit Interpretability model circuit explorer" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BranchTrace",
+    title: "Circuit Interpretability",
     description:
       "Trace a circuit hypothesis, intervene, and validate the result.",
     images: [imageUrl],
